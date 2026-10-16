@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>glowmark: highlight text without touching the DOM</title>
     <meta name="description" content="Highlight search terms, {{variables}} and any pattern in your content, with tooltips. Your HTML is never changed. Zero dependencies, any framework." />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23eaff3d'/%3E%3Ctext x='16' y='24' font-size='24' font-family='Georgia,serif' font-style='italic' text-anchor='middle' fill='%2316130f'%3Eg%3C/text%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23eaff3d'/%3E%3Ctext x='16' y='24' font-size='22' font-family='system-ui,sans-serif' font-weight='700' text-anchor='middle' fill='%2316130f'%3Eg%3C/text%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glowmark@0.2/style.css" />
     <style>
       :root {
@@ -44,7 +44,7 @@
       .glowmark-tooltip {
         --glowmark-tooltip-bg: var(--ink);
         --glowmark-tooltip-fg: var(--paper);
-        font: 500 12px/1.4 'IBM Plex Mono', ui-monospace, monospace;
+        font: 500 12px/1.4 'Geist Mono', ui-monospace, monospace;
         border-radius: 2px;
         padding: 5px 9px;
         box-shadow: 3px 3px 0 var(--neon);
@@ -56,7 +56,7 @@
         margin: 0;
         background: var(--paper);
         color: var(--ink);
-        font: 17px/1.6 'Instrument Sans', system-ui, sans-serif;
+        font: 16px/1.6 'Geist', system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
       }
       /* Paper grain */
@@ -71,26 +71,26 @@
       }
       a { color: inherit; }
       :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-      code, pre, .mono { font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-variant-ligatures: none; }
+      code, pre, .mono { font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-variant-ligatures: none; }
 
       .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
 
       /* Top bar */
       .topbar { display: flex; align-items: baseline; justify-content: space-between; padding: 28px 0; border-bottom: 1px solid var(--rule); }
-      .wordmark { font: italic 28px/1 'Instrument Serif', Georgia, serif; text-decoration: none; }
+      .wordmark { font: 600 20px/1 'Geist', system-ui, sans-serif; letter-spacing: -0.03em; text-decoration: none; }
       .nav { display: flex; gap: 24px; }
-      .nav a { font: 500 12px/1 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; text-decoration: none; color: var(--ink-soft); }
+      .nav a { font: 500 12px/1 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; text-decoration: none; color: var(--ink-soft); }
       .nav a:hover { color: var(--ink); }
 
       /* Hero */
       .hero { padding: 96px 0 88px; border-bottom: 1px solid var(--rule); }
       .hero h1 {
-        font: 400 clamp(56px, 10.5vw, 132px)/0.92 'Instrument Serif', Georgia, serif;
-        letter-spacing: -0.025em;
+        font: 600 clamp(48px, 9vw, 112px)/0.98 'Geist', system-ui, sans-serif;
+        letter-spacing: -0.055em;
         margin: 0 0 40px;
       }
       .hero h1 span { display: block; }
-      .hero h1 em { font-style: italic; }
+      .hero h1 em { font-style: normal; }
       /* Tight leading: draw the lines around the swipe on top of it, so its block never covers their letters. */
       .hero h1 span:not(:nth-child(2)) { position: relative; z-index: 1; }
       .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px 56px; align-items: end; }
@@ -100,32 +100,32 @@
       .install {
         display: flex; align-items: center; justify-content: space-between; gap: 16px;
         background: var(--ink); color: var(--paper); padding: 14px 14px 14px 18px; border-radius: 4px;
-        font: 500 15px/1 'IBM Plex Mono', monospace;
+        font: 500 15px/1 'Geist Mono', monospace;
       }
       .install .prompt { color: var(--neon); margin-right: 10px; }
       .copy {
         border: 1px solid color-mix(in srgb, var(--paper) 30%, transparent); background: transparent; color: var(--paper);
-        font: 500 11px/1 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em;
+        font: 500 11px/1 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em;
         padding: 7px 9px; border-radius: 3px; cursor: pointer;
       }
       .copy:hover { background: color-mix(in srgb, var(--paper) 12%, transparent); }
       .try {
         display: flex; justify-content: space-between; align-items: center;
         border: 1.5px solid var(--ink); border-radius: 4px; padding: 13px 18px;
-        font: 500 15px/1 'Instrument Sans', sans-serif; text-decoration: none;
+        font: 500 15px/1 'Geist', sans-serif; text-decoration: none;
         box-shadow: 4px 4px 0 var(--shadow); transition: transform 0.15s, box-shadow 0.15s;
         background: var(--sheet);
       }
       .try:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--shadow); }
-      .stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 56px; font: 500 12px/1 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+      .stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 56px; font: 500 12px/1 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
       .stats b { color: var(--ink); font-weight: 500; }
 
       /* Numbered sections */
       .section { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px 48px; padding: 72px 0; border-bottom: 1px solid var(--rule); }
-      .label { font: 500 12px/1.4 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); padding-top: 10px; }
+      .label { font: 500 12px/1.4 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); padding-top: 10px; }
       .label b { display: block; color: var(--ink); font-weight: 500; margin-bottom: 4px; }
-      .section h2 { font: 400 clamp(32px, 4.4vw, 46px)/1.05 'Instrument Serif', Georgia, serif; letter-spacing: -0.015em; margin: 0 0 12px; }
-      .section h2 em { font-style: italic; }
+      .section h2 { font: 600 clamp(28px, 3.6vw, 38px)/1.1 'Geist', system-ui, sans-serif; letter-spacing: -0.04em; margin: 0 0 12px; }
+      .section h2 em { font-style: normal; color: var(--ink-soft); }
       .section .intro { color: var(--ink-soft); margin: 0 0 28px; max-width: 36em; }
       .body { max-width: 720px; }
 
@@ -140,7 +140,7 @@
       /* Features */
       .features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); margin: 0; padding: 0; list-style: none; }
       .features li { border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 22px 22px 24px; }
-      .features h3 { font: 400 24px/1.1 'Instrument Serif', Georgia, serif; margin: 0 0 6px; }
+      .features h3 { font: 600 16px/1.3 'Geist', system-ui, sans-serif; letter-spacing: -0.01em; margin: 0 0 6px; }
       .features p { margin: 0; font-size: 15px; color: var(--ink-soft); }
 
       /* Pens (rule picker) */
@@ -148,7 +148,7 @@
       .pen {
         display: inline-flex; align-items: center; gap: 10px; padding: 9px 14px 9px 10px;
         border: 1.5px solid var(--rule); border-radius: 999px; background: transparent; color: var(--ink);
-        font: 500 14px/1 'Instrument Sans', sans-serif; cursor: pointer; transition: border-color 0.15s, background-color 0.15s;
+        font: 500 14px/1 'Geist', sans-serif; cursor: pointer; transition: border-color 0.15s, background-color 0.15s;
       }
       .pen:hover { border-color: var(--ink-soft); }
       .pen[aria-pressed='true'] { border-color: var(--ink); background: var(--sheet); }
@@ -162,7 +162,7 @@
       .sheet::after {
         content: 'editable'; position: absolute; top: -10px; right: 18px; padding: 2px 8px;
         background: var(--paper); border: 1px solid var(--rule); border-radius: 2px;
-        font: 500 10px/1.4 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft);
+        font: 500 10px/1.4 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft);
       }
       .sheet p { margin: 0 0 12px; }
       .sheet p:last-child { margin: 0; }
@@ -170,25 +170,25 @@
       #search {
         width: 100%; padding: 12px 14px; margin-bottom: 20px; border-radius: 4px;
         border: 1.5px solid var(--ink); background: var(--paper); color: var(--ink);
-        font: 500 15px/1 'IBM Plex Mono', monospace;
+        font: 500 15px/1 'Geist Mono', monospace;
       }
       #search[hidden] { display: none; }
       #html { white-space: pre-wrap; word-break: break-word; }
-      .proof { display: flex; align-items: center; gap: 10px; margin-top: 14px; font: 500 12px/1.4 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+      .proof { display: flex; align-items: center; gap: 10px; margin-top: 14px; font: 500 12px/1.4 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
       .proof i { width: 8px; height: 8px; border-radius: 50%; background: #2fbf4a; box-shadow: 0 0 0 4px color-mix(in srgb, #2fbf4a 22%, transparent); }
 
       /* Framework tabs */
       .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--rule); margin-bottom: 18px; }
       .tab {
         background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 10px 16px;
-        font: 500 13px/1 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); cursor: pointer;
+        font: 500 13px/1 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); cursor: pointer;
       }
       .tab:hover { color: var(--ink); }
       .tab[aria-pressed='true'] { color: var(--ink); border-bottom-color: var(--ink); }
 
       footer { padding: 80px 0 56px; }
-      .sign { font: italic 400 clamp(40px, 6vw, 72px)/1 'Instrument Serif', Georgia, serif; margin: 0 0 28px; letter-spacing: -0.02em; }
-      .fine { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font: 500 12px/1.4 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+      .sign { font: 600 clamp(36px, 5.5vw, 64px)/1 'Geist', system-ui, sans-serif; margin: 0 0 28px; letter-spacing: -0.05em; }
+      .fine { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font: 500 12px/1.4 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
 
       /* Load-in */
       @media (prefers-reduced-motion: no-preference) {
