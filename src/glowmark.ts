@@ -6,6 +6,8 @@ const TOOLTIP_SELECTOR = '.glowmark-tooltip';
 const SKIP_SELECTOR = `script, style, textarea, ${TOOLTIP_SELECTOR}`;
 const BASE_NAME = 'glowmark';
 
+type Opener = 'pointer' | 'caret';
+
 interface Entry {
   range: Range;
   rule: Rule;
@@ -13,7 +15,8 @@ interface Entry {
 }
 
 /**
- * Highlights rule matches in the text inside `root` and shows each rule's tooltip on hover.
+ * Highlights rule matches in the text inside `root` and shows each rule's tooltip on hover, on tap,
+ * and when the text cursor is inside a match.
  * The DOM is never changed: matches are painted with the CSS Custom Highlight API.
  * Highlights follow later content changes automatically.
  * Returns a function that removes the highlights, listeners and tooltip.
@@ -24,10 +27,30 @@ export function glowmark(root: HTMLElement, rules: Rule[]): () => void {
   const tooltip = createTooltip(doc);
   let entries: Entry[] = [];
   let active: Entry | null = null;
+  // What opened the tooltip, so the pointer doesn't close one the text cursor opened, and vice versa.
+  let openedBy: Opener | null = null;
 
   const hide = () => {
     active = null;
+    openedBy = null;
     tooltip.hide();
+  };
+
+  const show = (entry: Entry, rect: DOMRect, by: Opener) => {
+    if (entry === active) {
+      // The text cursor is the steadier anchor: once it is in the match, moving the mouse away keeps the tooltip.
+      if (by === 'caret') openedBy = 'caret';
+      return;
+    }
+    const text = entry.rule.tooltip?.({ text: entry.range.toString(), groups: entry.groups });
+    if (!text) {
+      // A match without a tooltip only closes a tooltip that was opened the same way.
+      if (!openedBy || openedBy === by) hide();
+      return;
+    }
+    active = entry;
+    openedBy = by;
+    tooltip.show(text, rect);
   };
 
   const scan = () => {
@@ -35,16 +58,36 @@ export function glowmark(root: HTMLElement, rules: Rule[]): () => void {
     unpaint(doc, entries);
     entries = findEntries(root, globalRules);
     paint(doc, entries);
+    // The ranges were rebuilt, so reopen the text cursor's tooltip in the same task: no flicker while typing.
+    onSelectionChange();
   };
 
-  // Painted ranges are not elements, so hover is found by hit-testing the pointer.
-  const onMove = (e: MouseEvent) => {
+  // Painted ranges are not elements, so hover and tap are found by hit-testing the pointer.
+  const onPointer = (e: MouseEvent) => {
     const hit = entryAt(entries, e);
-    if (hit?.entry === active) return;
-    const text = hit?.entry.rule.tooltip?.({ text: hit.entry.range.toString(), groups: hit.entry.groups });
-    if (!hit || !text) return hide();
-    active = hit.entry;
-    tooltip.show(text, hit.rect);
+    if (hit) show(hit.entry, hit.rect, 'pointer');
+    else if (openedBy === 'pointer') hide();
+  };
+
+  const onLeave = () => {
+    if (openedBy === 'pointer') hide();
+  };
+
+  // Pressing anywhere outside root (or a shadow root inside it) closes the tooltip.
+  const onPointerDownOutside = (e: Event) => {
+    if (!e.composedPath().includes(root)) hide();
+  };
+
+  // Keyboard users (editors, caret browsing) open a tooltip by moving the text cursor into a match.
+  const onSelectionChange = () => {
+    const selection = doc.getSelection();
+    const caret = selection?.rangeCount && selection.isCollapsed ? selection.getRangeAt(0) : null;
+    const entry =
+      caret && root.contains(caret.startContainer)
+        ? entries.find((e) => isInside(e.range, caret.startContainer, caret.startOffset))
+        : undefined;
+    if (entry) show(entry, entry.range.getClientRects()[0] ?? entry.range.getBoundingClientRect(), 'caret');
+    else if (openedBy === 'caret') hide();
   };
 
   const onKeydown = (e: KeyboardEvent) => {
@@ -58,22 +101,38 @@ export function glowmark(root: HTMLElement, rules: Rule[]): () => void {
 
   scan();
   observer.observe(root, { childList: true, subtree: true, characterData: true });
-  root.addEventListener('mousemove', onMove);
-  root.addEventListener('mouseleave', hide);
+  root.addEventListener('mousemove', onPointer);
+  root.addEventListener('mouseleave', onLeave);
+  // A tap fires click. Listening on root itself matters: iOS Safari doesn't send taps on plain text up to document.
+  root.addEventListener('click', onPointer);
+  doc.addEventListener('pointerdown', onPointerDownOutside);
+  doc.addEventListener('selectionchange', onSelectionChange);
   doc.addEventListener('keydown', onKeydown);
   // shortcut: hides on scroll instead of following the match; track position if users ask for it.
   doc.addEventListener('scroll', hide, { capture: true, passive: true });
 
   return () => {
     observer.disconnect();
-    root.removeEventListener('mousemove', onMove);
-    root.removeEventListener('mouseleave', hide);
+    root.removeEventListener('mousemove', onPointer);
+    root.removeEventListener('mouseleave', onLeave);
+    root.removeEventListener('click', onPointer);
+    doc.removeEventListener('pointerdown', onPointerDownOutside);
+    doc.removeEventListener('selectionchange', onSelectionChange);
     doc.removeEventListener('keydown', onKeydown);
     doc.removeEventListener('scroll', hide, { capture: true });
     unpaint(doc, entries);
     entries = [];
     tooltip.element.remove();
   };
+}
+
+/** Strictly inside: a text cursor right before or after a match is next to it, not in it. */
+function isInside(range: Range, node: Node, offset: number): boolean {
+  return (
+    range.comparePoint(node, offset) === 0 &&
+    !(node === range.startContainer && offset === range.startOffset) &&
+    !(node === range.endContainer && offset === range.endOffset)
+  );
 }
 
 const isInTooltip = (node: Node) =>

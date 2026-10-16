@@ -39,16 +39,20 @@ The API is taken from the root's own window (`root.ownerDocument.defaultView`), 
 
 Observes `root` with `childList`, `subtree` and `characterData`. Any change causes a full rescan (unpaint the old ranges, then scan and paint again). Changes inside any glowmark tooltip are ignored, including tooltips that belong to other instances. This matters when `root` is `document.body`, where the tooltips live.
 
-## Hover (`entryAt`)
+## Hover, tap and text cursor
 
-On `mousemove`, the ranges are checked against the pointer:
+On `mousemove`, and on `click` (which a tap fires; the listener is on `root` itself because iOS Safari doesn't send taps on plain text up to `document`), the ranges are checked against the pointer with `entryAt`:
 
 - **Cheap filter first:** a range is only considered if its text node's parent is `event.target`, the element directly under the pointer.
 - **Then** each of the range's `getClientRects()` is checked for the pointer position. A match that wraps across lines has one rect per line. The tooltip anchors to the line where the pointer first entered the match.
 - The tooltip text is computed **on hover** by calling `rule.tooltip(match)`, so it always reflects the caller's latest data. An empty string means no tooltip.
 - If the same match is hovered again, nothing happens. This avoids re-rendering on every mouse move.
 
-The tooltip hides on: the pointer moving off a match, `mouseleave` on root, Escape, any scroll, and every rescan.
+On `selectionchange`, if the selection is a collapsed text cursor inside `root`, the match that strictly contains it (`isInside`: a cursor right before or after a match doesn't count) gets the tooltip, anchored to its first line. Every rescan calls the same check at the end, so a cursor tooltip reopens in the same task while the user types.
+
+The tooltip remembers what opened it (`openedBy`: pointer or caret). Moving the pointer off a match, onto a match without a tooltip, or out of `root` only closes a tooltip the pointer opened. Moving the text cursor out of a match only closes one the cursor opened. If the cursor enters the match the pointer opened, the cursor takes it over.
+
+The tooltip hides on: the pointer moving off a match, `mouseleave` on root, a `pointerdown` outside root (checked with `composedPath`, so shadow roots count as inside), the text cursor leaving a match, Escape, any scroll, and a rescan (unless the text cursor is still in a match).
 
 ## Tooltip (`tooltip.ts`)
 

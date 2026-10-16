@@ -100,6 +100,117 @@ describe('glowmark', () => {
     expect(tip().hidden).toBe(true);
   });
 
+  it('shows the tooltip on tap (click) and hides it on a press outside', () => {
+    root.innerHTML = '<p>{{name}}</p>';
+    const outside = document.createElement('div');
+    document.body.append(outside);
+    destroy = glowmark(root, [mustache({ tooltip: () => 'tip' })]);
+
+    root.firstElementChild!.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 20, clientY: 15 }));
+    expect(tip().hidden).toBe(false);
+
+    root.firstElementChild!.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }));
+    expect(tip().hidden).toBe(false); // a press inside root keeps it
+
+    outside.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }));
+    expect(tip().hidden).toBe(true);
+    outside.remove();
+  });
+
+  describe('text cursor', () => {
+    const placeCaret = (node: Node, offset: number) => {
+      document.getSelection()!.collapse(node, offset);
+      document.dispatchEvent(new Event('selectionchange'));
+    };
+
+    it('opens the tooltip inside a match and keeps it when the mouse leaves', () => {
+      root.innerHTML = '<p>Hi {{name}} there</p>';
+      destroy = glowmark(root, [mustache({ tooltip: () => 'caret tip' })]);
+      const text = root.firstElementChild!.firstChild!;
+
+      placeCaret(text, 5); // inside "{{name}}"
+      expect(tip().hidden).toBe(false);
+      expect(tip().textContent).toBe('caret tip');
+
+      root.dispatchEvent(new MouseEvent('mouseleave'));
+      moveTo(root.firstElementChild!, 500, 500); // pointer off every match
+      expect(tip().hidden).toBe(false);
+
+      placeCaret(text, 14); // in " there"
+      expect(tip().hidden).toBe(true);
+    });
+
+    it('ignores a cursor right before or right after a match', () => {
+      root.innerHTML = '<p>Hi {{name}} there</p>';
+      destroy = glowmark(root, [mustache({ tooltip: () => 'tip' })]);
+      const text = root.firstElementChild!.firstChild!;
+      placeCaret(text, 3); // "Hi |{{name}}"
+      expect(tip().hidden).toBe(true);
+      placeCaret(text, 11); // "{{name}}| there"
+      expect(tip().hidden).toBe(true);
+    });
+
+    it('closes its tooltip when the cursor moves outside root', () => {
+      const other = document.createElement('p');
+      other.textContent = 'elsewhere';
+      document.body.append(other);
+      root.innerHTML = '<p>{{name}}</p>';
+      destroy = glowmark(root, [mustache({ tooltip: () => 'tip' })]);
+
+      placeCaret(root.firstElementChild!.firstChild!, 3);
+      expect(tip().hidden).toBe(false);
+      placeCaret(other.firstChild!, 2);
+      expect(tip().hidden).toBe(true);
+      other.remove();
+    });
+
+    it('is not closed by hovering a match that has no tooltip', () => {
+      root.innerHTML = '<p>{{name}}</p><div>${id}</div>';
+      destroy = glowmark(root, [mustache({ tooltip: () => 'caret tip' }), template()]);
+      placeCaret(root.firstElementChild!.firstChild!, 3);
+      moveTo(root.children[1]); // hovers ${id}, which has no tooltip
+      expect(tip().hidden).toBe(false);
+    });
+
+    it('takes over a tooltip the pointer opened on the same match', () => {
+      root.innerHTML = '<p>{{name}}</p>';
+      destroy = glowmark(root, [mustache({ tooltip: () => 'tip' })]);
+      moveTo(root.firstElementChild!); // opened by pointer
+      placeCaret(root.firstElementChild!.firstChild!, 3); // cursor into the same match
+      moveTo(root.firstElementChild!, 500, 500); // pointer away
+      expect(tip().hidden).toBe(false);
+    });
+
+    it('keeps its tooltip open across a content change', async () => {
+      root.innerHTML = '<p>{{name}}</p>';
+      destroy = glowmark(root, [mustache({ tooltip: () => 'tip' })]);
+      placeCaret(root.firstElementChild!.firstChild!, 3);
+      await flushMutations(); // let any queued selectionchange run first
+      root.append(document.createElement('p')); // triggers a rescan
+      await Promise.resolve(); // the observer runs as a microtask, before any new selectionchange task
+      expect(tip().hidden).toBe(false);
+    });
+  });
+
+  it('removes every document listener it added', () => {
+    const added: string[] = [];
+    const removed: string[] = [];
+    const addSpy = vi.spyOn(document, 'addEventListener').mockImplementation(function (this: Document, type, ...rest) {
+      added.push(type);
+      return EventTarget.prototype.addEventListener.call(this, type, ...rest);
+    });
+    const removeSpy = vi.spyOn(document, 'removeEventListener').mockImplementation(function (this: Document, type, ...rest) {
+      removed.push(type);
+      return EventTarget.prototype.removeEventListener.call(this, type, ...rest);
+    });
+    root.innerHTML = '<p>{{x}}</p>';
+    glowmark(root, [mustache()])();
+    addSpy.mockRestore();
+    removeSpy.mockRestore();
+    expect(removed.sort()).toEqual(added.sort());
+    expect(added).toEqual(expect.arrayContaining(['pointerdown', 'selectionchange', 'keydown', 'scroll']));
+  });
+
   it('shows nothing for a rule without a tooltip or with an empty one', () => {
     root.innerHTML = '<p>{{a}}</p><p>${b}</p>';
     destroy = glowmark(root, [mustache({ tooltip: () => '' }), template()]);

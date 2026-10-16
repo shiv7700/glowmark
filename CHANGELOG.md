@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 (unreleased)
+
+- Tooltips now also open on **tap** (touch screens) and when the **text cursor** is inside a match (keyboard users in editors, caret browsing). A press outside the element closes the tooltip.
+- A tooltip opened by the text cursor stays open while typing (content rescans reopen it in the same task) and isn't closed by mouse movement.
+- The tooltip is now a polite live region, so screen readers announce it when it opens.
+
 ## 0.2.0 (2026-10-16)
 
 - New `words(list, options)` preset for search highlighting. It matches literal text, ignores case by default, prefers longer terms, and ignores blank terms.

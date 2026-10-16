@@ -73,3 +73,16 @@ The alternative was wrapping only the matches that have tooltips (in a `span`, k
 Highlighting search terms is the most common reason people look for a highlighter (mark.js, react-highlight-words), so it gets a preset. Search terms are user input, so they're escaped and treated as literal text. Longer terms are tried first so that "react hooks" beats "react". Case is ignored by default because that's what people expect from search. `caseSensitive` is the only option. A whole-word option was left out until someone asks for it.
 
 There's no `update(rules)` API. A new search is `destroy()` followed by a new `glowmark()` call. That costs one rescan, the same as an update would, and keeps the API to one function.
+
+### D15. Tooltips on tap and text cursor, not only hover (2026-10-16). Updates D11.
+
+Both design reviews flagged that tooltips only worked with a mouse. Painted ranges can't receive focus, but two signals still work without adding elements:
+
+- **Tap:** a tap fires `click` with coordinates, so it reuses the hover hit-test. The listener sits on the root, not on `document`, because iOS Safari doesn't send taps on non-clickable content up to `document`. A `pointerdown` outside the root closes the tooltip.
+- **Text cursor:** `selectionchange` with a collapsed selection strictly inside a match opens its tooltip. This covers keyboard users in editors and caret browsing. A cursor right next to a match doesn't count, so the tooltip doesn't cover text the user is typing after it.
+
+The tooltip remembers whether the pointer or the cursor opened it, so one doesn't close the other's tooltip (for example, mouse jitter while typing). If both point at the same match, the cursor wins.
+
+The tooltip is a polite `aria-live` region, so screen readers announce its text when it opens, since a painted match can't carry `aria-describedby`. This hasn't been tested with real screen readers yet.
+
+Known limits: Text-cursor tooltips don't work inside shadow DOM. Two instances can each show a tooltip at once (one from the cursor, one from hover). That's rare, so it was left as is.

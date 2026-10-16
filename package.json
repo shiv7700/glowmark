@@ -1,6 +1,6 @@
 {
   "name": "glowmark",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Highlight search terms, {{variables}}, ${templates} or any pattern in rendered content, with tooltips, without changing your HTML. Zero dependencies, works with any framework.",
   "type": "module",
   "exports": {

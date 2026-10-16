@@ -196,11 +196,11 @@ glowmark(document.querySelector('#preview'), rules);
 function glowmark(root: HTMLElement, rules: Rule[]): () => void;
 ```
 
-Highlights every rule match in the text inside `root` and shows the rule's tooltip when the mouse is over a match.
+Highlights every rule match in the text inside `root` and shows the rule's tooltip when the mouse is over a match, when it's tapped, or when the text cursor is inside it.
 
 - **The DOM is never changed.** `root.innerHTML` is the same before and after.
 - **It follows changes.** When the content inside `root` changes, the highlights update automatically.
-- **The tooltip hides** when the mouse leaves the match, on <kbd>Esc</kbd>, or on scroll.
+- **The tooltip hides** when the mouse leaves the match, on a press outside the element, when the text cursor leaves the match, on <kbd>Esc</kbd>, or on scroll. A tooltip the text cursor opened isn't closed by mouse movement.
 - **It returns `destroy()`**, which removes the highlights, the tooltip and every listener.
 
 When matches overlap, **the one that starts first wins**. If two start at the same place, **the rule listed first wins**, so the order of your rules sets their priority.
@@ -359,7 +359,7 @@ If you skip the stylesheet, write your own `::highlight(glowmark)` rule, or the 
 
 ## Browser support
 
-Colors use the CSS Custom Highlight API: Chrome/Edge 105+, Safari 17.2+, Firefox 140+.
+Colors use the CSS Custom Highlight API: Chrome/Edge 105+, Safari 17.2+, Firefox 140+ (from [MDN's compatibility data](https://developer.mozilla.org/en-US/docs/Web/API/Highlight#browser_compatibility)).
 
 In older browsers, nothing breaks: the text just isn't colored, and **tooltips still work**.
 
@@ -367,10 +367,15 @@ glowmark needs `document`, so call it in the browser (for example in `useEffect`
 
 ## Accessibility
 
-Painted highlights are not elements, so:
+Painted highlights are not elements, so glowmark opens tooltips in three ways:
 
-- Tooltips open on **mouse hover only**. Keyboard and touch users can't open them.
-- Screen readers read the text normally, without the highlight or the tooltip.
+- **Mouse:** hover over a match.
+- **Touch:** tap a match. Tap outside the element to close it.
+- **Keyboard:** move the text cursor inside a match (not just next to it), for example in an editor or with caret browsing (<kbd>F7</kbd>). The tooltip stays open while you type in the match, even if the mouse moves.
+
+Screen readers read the text normally, without the highlight. The tooltip is a polite live region, so its text is announced when it opens.
+
+Inside shadow DOM, hover and tap work, but text-cursor tooltips don't, because `document.getSelection()` can't see into a shadow root.
 
 If your users need the tooltip content, show it somewhere else on the page as well. Don't rely on the tooltip alone for important information.
 

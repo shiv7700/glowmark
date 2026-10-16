@@ -11,14 +11,17 @@ export function createTooltip(doc: Document): Tooltip {
   const element = doc.createElement('div');
   element.className = 'glowmark-tooltip';
   element.setAttribute('role', 'tooltip');
+  // Painted matches can't carry aria-describedby, so announce the tooltip text instead.
+  element.setAttribute('aria-live', 'polite');
   element.hidden = true;
   doc.body.append(element);
 
   return {
     element,
     show(text, anchor) {
-      element.textContent = text;
+      // Unhide first: screen readers ignore text changes inside a hidden live region.
       element.hidden = false;
+      element.textContent = text;
       position(element, anchor);
     },
     hide() {
