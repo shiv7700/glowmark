@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 (unreleased)
+## 0.3.0 (2026-10-16)
 
 - Tooltips now also open on **tap** (touch screens) and when the **text cursor** is inside a match (keyboard users in editors, caret browsing). A press outside the element closes the tooltip.
 - A tooltip opened by the text cursor stays open while typing (content rescans reopen it in the same task) and isn't closed by mouse movement.
