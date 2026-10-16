@@ -5,237 +5,379 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>glowmark: highlight text without touching the DOM</title>
     <meta name="description" content="Highlight search terms, {{variables}} and any pattern in your content, with tooltips. Your HTML is never changed. Zero dependencies, any framework." />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23fde047'/%3E%3Ctext x='16' y='23' font-size='20' font-family='system-ui' font-weight='700' text-anchor='middle'%3Eg%3C/text%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23eaff3d'/%3E%3Ctext x='16' y='24' font-size='24' font-family='Georgia,serif' font-style='italic' text-anchor='middle' fill='%2316130f'%3Eg%3C/text%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glowmark@0.2/style.css" />
     <style>
       :root {
-        --bg: #ffffff;
-        --surface: #fafafa;
-        --text: #171717;
-        --muted: #737373;
-        --border: #ebebeb;
-        --button: #171717;
-        --button-text: #ffffff;
-        --focus: #2563eb;
+        --paper: #f5f1e6;
+        --sheet: #fbf9f3;
+        --ink: #16130f;
+        --ink-soft: #5c564b;
+        --rule: #d9d2c1;
+        --neon: #eaff3d;
+        --violet: #d8c4ff;
+        --sky: #b9e5ff;
+        --rose: #ffc6df;
+        --shadow: #16130f;
 
-        /* Highlights in the playground */
-        --glowmark-mustache-bg: #ede9fe;
-        --glowmark-template-bg: #dbeafe;
-        --search-bg: #fde68a;
-        --todo-bg: #ffe4e6;
+        --glowmark-mustache-bg: var(--violet);
+        --glowmark-template-bg: var(--sky);
 
-        /* Code coloring, done by glowmark itself */
-        --code-keyword: #7c3aed;
-        --code-string: #15803d;
-        --code-fn: #2563eb;
-        --code-comment: #a3a3a3;
+        --code-keyword: #a3127f;
+        --code-string: #2d6a12;
+        --code-fn: #1f4fd1;
+        --code-comment: #9a9282;
         color-scheme: light;
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --bg: #0a0a0a;
-          --surface: #111111;
-          --text: #ededed;
-          --muted: #a1a1a1;
-          --border: #262626;
-          --button: #ededed;
-          --button-text: #0a0a0a;
-          --focus: #60a5fa;
-          --glowmark-mustache-bg: #3b2a6b;
-          --glowmark-template-bg: #1e3a5f;
-          --search-bg: #854d0e;
-          --todo-bg: #5f1d2a;
-          --glowmark-tooltip-bg: #ededed;
-          --glowmark-tooltip-fg: #0a0a0a;
-          --code-keyword: #c4b5fd;
-          --code-string: #86efac;
-          --code-fn: #93c5fd;
-          --code-comment: #737373;
+          --paper: #12110e;
+          --sheet: #1a1814;
+          --ink: #f1ecdf;
+          --ink-soft: #a39b8b;
+          --rule: #34302a;
+          --neon: #d4ef00;
+          --violet: #5b3fa6;
+          --sky: #1f5677;
+          --rose: #8a2a55;
+          --shadow: #000000;
+          --code-keyword: #f08bd6;
+          --code-string: #a6e07f;
+          --code-fn: #8fb4ff;
+          --code-comment: #6f685b;
           color-scheme: dark;
         }
       }
 
-      ::highlight(glowmark-search) { background-color: var(--search-bg); }
-      ::highlight(glowmark-todo) { background-color: var(--todo-bg); }
+      ::highlight(hero-swipe) { background-color: var(--neon); color: #16130f; }
+      ::highlight(glowmark-search) { background-color: var(--neon); color: #16130f; }
+      ::highlight(glowmark-todo) { background-color: var(--rose); }
       ::highlight(glowmark-keyword) { color: var(--code-keyword); }
       ::highlight(glowmark-string) { color: var(--code-string); }
       ::highlight(glowmark-fn) { color: var(--code-fn); }
       ::highlight(glowmark-comment) { color: var(--code-comment); }
 
+      .glowmark-tooltip {
+        --glowmark-tooltip-bg: var(--ink);
+        --glowmark-tooltip-fg: var(--paper);
+        font: 500 12px/1.4 'IBM Plex Mono', ui-monospace, monospace;
+        border-radius: 2px;
+        padding: 5px 9px;
+        box-shadow: 3px 3px 0 var(--neon);
+      }
+
       * { box-sizing: border-box; }
-      html { -webkit-text-size-adjust: 100%; }
+      html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
       body {
         margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        font: 15px/1.6 Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+        font: 17px/1.6 'Instrument Sans', system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
       }
-      main { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+      /* Paper grain */
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 100;
+        opacity: 0.07;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
       a { color: inherit; }
-      code, pre { font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; font-variant-ligatures: none; }
+      :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+      code, pre, .mono { font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-variant-ligatures: none; }
+
+      .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+      /* Top bar */
+      .topbar { display: flex; align-items: baseline; justify-content: space-between; padding: 28px 0; border-bottom: 1px solid var(--rule); }
+      .wordmark { font: italic 28px/1 'Instrument Serif', Georgia, serif; text-decoration: none; }
+      .nav { display: flex; gap: 24px; }
+      .nav a { font: 500 12px/1 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; text-decoration: none; color: var(--ink-soft); }
+      .nav a:hover { color: var(--ink); }
 
       /* Hero */
-      .hero { text-align: center; padding: 112px 0 72px; }
-      .meta { display: inline-flex; gap: 8px; font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; margin-bottom: 24px; }
-      h1 { font-size: 48px; line-height: 1.1; letter-spacing: -0.04em; font-weight: 700; margin: 0 0 12px; }
-      .tagline { font-size: 18px; margin: 0 0 6px; }
-      .subline { color: var(--muted); margin: 0 0 32px; }
-      .buttons { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
-      .btn {
-        display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 20px; border-radius: 8px;
-        font: 500 14px/1 Inter, system-ui, sans-serif; text-decoration: none; cursor: pointer;
-        border: 1px solid var(--border); background: var(--bg); color: var(--text);
-        transition: background-color 0.15s, border-color 0.15s;
+      .hero { padding: 96px 0 88px; border-bottom: 1px solid var(--rule); }
+      .hero h1 {
+        font: 400 clamp(56px, 10.5vw, 132px)/0.92 'Instrument Serif', Georgia, serif;
+        letter-spacing: -0.025em;
+        margin: 0 0 40px;
       }
-      .btn:hover { background: var(--surface); }
-      .btn-primary { background: var(--button); color: var(--button-text); border-color: var(--button); }
-      .btn-primary:hover { background: var(--button); opacity: 0.88; }
-      .docs-link { display: inline-block; margin-top: 16px; font-size: 13px; color: var(--muted); }
-      :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+      .hero h1 span { display: block; }
+      .hero h1 em { font-style: italic; }
+      /* Tight leading: draw the lines around the swipe on top of it, so its block never covers their letters. */
+      .hero h1 span:not(:nth-child(2)) { position: relative; z-index: 1; }
+      .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px 56px; align-items: end; }
+      .lede { font-size: 20px; line-height: 1.5; max-width: 30em; margin: 0; color: var(--ink-soft); }
+      .lede strong { color: var(--ink); font-weight: 500; }
+      .cta { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 280px; }
+      .install {
+        display: flex; align-items: center; justify-content: space-between; gap: 16px;
+        background: var(--ink); color: var(--paper); padding: 14px 14px 14px 18px; border-radius: 4px;
+        font: 500 15px/1 'IBM Plex Mono', monospace;
+      }
+      .install .prompt { color: var(--neon); margin-right: 10px; }
+      .copy {
+        border: 1px solid color-mix(in srgb, var(--paper) 30%, transparent); background: transparent; color: var(--paper);
+        font: 500 11px/1 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em;
+        padding: 7px 9px; border-radius: 3px; cursor: pointer;
+      }
+      .copy:hover { background: color-mix(in srgb, var(--paper) 12%, transparent); }
+      .try {
+        display: flex; justify-content: space-between; align-items: center;
+        border: 1.5px solid var(--ink); border-radius: 4px; padding: 13px 18px;
+        font: 500 15px/1 'Instrument Sans', sans-serif; text-decoration: none;
+        box-shadow: 4px 4px 0 var(--shadow); transition: transform 0.15s, box-shadow 0.15s;
+        background: var(--sheet);
+      }
+      .try:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--shadow); }
+      .stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 56px; font: 500 12px/1 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+      .stats b { color: var(--ink); font-weight: 500; }
 
-      /* Features */
-      .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 16px; list-style: none; padding: 0; margin: 0 0 72px; font-size: 14px; font-weight: 500; }
-      .features li { display: flex; align-items: center; gap: 8px; }
-      .features svg { flex: none; color: var(--muted); }
+      /* Numbered sections */
+      .section { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px 48px; padding: 72px 0; border-bottom: 1px solid var(--rule); }
+      .label { font: 500 12px/1.4 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); padding-top: 10px; }
+      .label b { display: block; color: var(--ink); font-weight: 500; margin-bottom: 4px; }
+      .section h2 { font: 400 clamp(32px, 4.4vw, 46px)/1.05 'Instrument Serif', Georgia, serif; letter-spacing: -0.015em; margin: 0 0 12px; }
+      .section h2 em { font-style: italic; }
+      .section .intro { color: var(--ink-soft); margin: 0 0 28px; max-width: 36em; }
+      .body { max-width: 720px; }
 
-      /* Sections */
-      section { margin-bottom: 64px; }
-      h2 { font-size: 16px; font-weight: 600; margin: 0 0 4px; }
-      section > p { color: var(--muted); margin: 0 0 16px; }
       pre {
-        margin: 0; padding: 16px; overflow-x: auto; line-height: 1.7;
-        background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+        margin: 0; padding: 20px 22px; overflow-x: auto;
+        font-size: 14px; line-height: 1.75;
+        background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px;
         /* The default highlight background must not show behind code colors. */
         --glowmark-bg: transparent;
       }
-      .copy-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 8px 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
-      .icon-btn { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--muted); cursor: pointer; }
-      .icon-btn:hover { color: var(--text); }
 
-      /* Segmented buttons */
-      .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-      .tab {
-        height: 32px; padding: 0 12px; border-radius: 6px; cursor: pointer;
-        font: 500 13px/1 Inter, system-ui, sans-serif; color: var(--text);
-        background: var(--bg); border: 1px solid var(--border); transition: background-color 0.15s;
+      /* Features */
+      .features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); margin: 0; padding: 0; list-style: none; }
+      .features li { border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 22px 22px 24px; }
+      .features h3 { font: 400 24px/1.1 'Instrument Serif', Georgia, serif; margin: 0 0 6px; }
+      .features p { margin: 0; font-size: 15px; color: var(--ink-soft); }
+
+      /* Pens (rule picker) */
+      .pens { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+      .pen {
+        display: inline-flex; align-items: center; gap: 10px; padding: 9px 14px 9px 10px;
+        border: 1.5px solid var(--rule); border-radius: 999px; background: transparent; color: var(--ink);
+        font: 500 14px/1 'Instrument Sans', sans-serif; cursor: pointer; transition: border-color 0.15s, background-color 0.15s;
       }
-      .tab:hover { background: var(--surface); }
-      .tab[aria-pressed='true'] { background: var(--surface); border-color: var(--muted); }
+      .pen:hover { border-color: var(--ink-soft); }
+      .pen[aria-pressed='true'] { border-color: var(--ink); background: var(--sheet); }
+      .pen i { width: 18px; height: 10px; border-radius: 2px 5px 5px 2px; background: var(--c); transform: skewX(-12deg); }
 
-      /* Playground */
-      .demo { border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 12px; }
-      .demo p { margin: 0 0 10px; }
-      .demo p:last-child { margin: 0; }
+      .sheet {
+        position: relative; background: var(--sheet); border: 1.5px solid var(--ink); border-radius: 4px;
+        padding: 28px 30px; margin-bottom: 18px; box-shadow: 6px 6px 0 var(--shadow);
+        font-size: 19px; line-height: 1.7;
+      }
+      .sheet::after {
+        content: 'editable'; position: absolute; top: -10px; right: 18px; padding: 2px 8px;
+        background: var(--paper); border: 1px solid var(--rule); border-radius: 2px;
+        font: 500 10px/1.4 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft);
+      }
+      .sheet p { margin: 0 0 12px; }
+      .sheet p:last-child { margin: 0; }
       #content { outline: none; }
-      #search { width: 100%; height: 36px; padding: 0 12px; margin-bottom: 16px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; }
+      #search {
+        width: 100%; padding: 12px 14px; margin-bottom: 20px; border-radius: 4px;
+        border: 1.5px solid var(--ink); background: var(--paper); color: var(--ink);
+        font: 500 15px/1 'IBM Plex Mono', monospace;
+      }
       #search[hidden] { display: none; }
-      .hint { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
       #html { white-space: pre-wrap; word-break: break-word; }
+      .proof { display: flex; align-items: center; gap: 10px; margin-top: 14px; font: 500 12px/1.4 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+      .proof i { width: 8px; height: 8px; border-radius: 50%; background: #2fbf4a; box-shadow: 0 0 0 4px color-mix(in srgb, #2fbf4a 22%, transparent); }
 
-      footer { border-top: 1px solid var(--border); padding: 24px 16px; text-align: center; font-size: 13px; color: var(--muted); }
-      footer a { color: var(--text); }
+      /* Framework tabs */
+      .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--rule); margin-bottom: 18px; }
+      .tab {
+        background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 10px 16px;
+        font: 500 13px/1 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); cursor: pointer;
+      }
+      .tab:hover { color: var(--ink); }
+      .tab[aria-pressed='true'] { color: var(--ink); border-bottom-color: var(--ink); }
 
-      @media (max-width: 560px) {
-        .hero { padding: 72px 0 56px; }
-        h1 { font-size: 40px; }
-        .features { grid-template-columns: repeat(2, 1fr); }
+      footer { padding: 80px 0 56px; }
+      .sign { font: italic 400 clamp(40px, 6vw, 72px)/1 'Instrument Serif', Georgia, serif; margin: 0 0 28px; letter-spacing: -0.02em; }
+      .fine { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font: 500 12px/1.4 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+
+      /* Load-in */
+      @media (prefers-reduced-motion: no-preference) {
+        .rise { opacity: 0; transform: translateY(14px); animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: calc(var(--i, 0) * 90ms); }
+        @keyframes rise { to { opacity: 1; transform: none; } }
+      }
+
+      @media (max-width: 860px) {
+        .hero-grid { grid-template-columns: 1fr; }
+        .cta { min-width: 0; }
+        .section { grid-template-columns: minmax(0, 1fr); padding: 56px 0; }
+        .label { padding-top: 0; }
+        .features { grid-template-columns: 1fr 1fr; }
+      }
+      @media (max-width: 520px) {
+        .wrap { padding: 0 16px; }
+        .nav { gap: 14px; }
+        .hero { padding: 64px 0; }
+        .features { grid-template-columns: 1fr; }
+        .sheet { padding: 22px 20px; font-size: 17px; }
       }
     </style>
   </head>
   <body>
-    <main>
-      <header class="hero">
-        <div class="meta"><span>v0.2.0</span><span>·</span><span>1.7 kB</span><span>·</span><span>0 dependencies</span></div>
-        <h1>glowmark</h1>
-        <p class="tagline" id="tagline">Highlight search terms and {{ variables }} in any content.</p>
-        <p class="subline">Your HTML is never changed. Works with any framework.</p>
-        <div class="buttons">
-          <a class="btn btn-primary" href="#try">Try it</a>
-          <a class="btn" href="https://github.com/shiv7700/glowmark">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-            GitHub
-          </a>
-        </div>
-        <a class="docs-link" href="https://github.com/shiv7700/glowmark#readme">Documentation</a>
+    <div class="wrap">
+      <header class="topbar">
+        <a class="wordmark" href="#">glowmark</a>
+        <nav class="nav" aria-label="Links">
+          <a href="https://github.com/shiv7700/glowmark#readme">Docs</a>
+          <a href="https://github.com/shiv7700/glowmark">GitHub</a>
+          <a href="https://www.npmjs.com/package/glowmark">npm</a>
+        </nav>
       </header>
 
-      <ul class="features" aria-label="Features">
-        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>No DOM changes</li>
-        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>Any framework</li>
-        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>Search built in</li>
-        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>Hover tooltips</li>
-        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>Follows edits</li>
-        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>TypeScript</li>
-      </ul>
-
-      <section>
-        <h2>Installation</h2>
-        <p>One package, no dependencies.</p>
-        <div class="copy-row">
-          <code>npm install glowmark</code>
-          <button class="icon-btn" id="copy" type="button" aria-label="Copy install command">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5"/></svg>
-          </button>
+      <section class="hero">
+        <h1>
+          <span class="rise" style="--i: 0">Highlight text</span>
+          <span class="rise" style="--i: 1"><em id="swipe">without touching</em></span>
+          <span class="rise" style="--i: 2">the DOM.</span>
+        </h1>
+        <div class="hero-grid">
+          <p class="lede rise" style="--i: 3">
+            Search terms, <strong>{{ variables }}</strong> and any pattern, painted straight onto your content with tooltips on hover.
+            No wrappers, no re&#8209;renders, <strong>any&nbsp;framework</strong>.
+          </p>
+          <div class="cta rise" style="--i: 4">
+            <div class="install">
+              <span><span class="prompt">$</span>npm i glowmark</span>
+              <button class="copy" id="copy" type="button">Copy</button>
+            </div>
+            <a class="try" href="#try">Try it live <span aria-hidden="true">↓</span></a>
+          </div>
+        </div>
+        <div class="stats rise" style="--i: 5">
+          <span><b>1.7 kB</b> gzipped</span>
+          <span><b>0</b> dependencies</span>
+          <span><b>v0.2.0</b></span>
+          <span><b>MIT</b> license</span>
         </div>
       </section>
 
-      <section>
-        <h2>Usage</h2>
-        <p>Render your content as usual, then point glowmark at the element.</p>
-        <pre><code class="code">import { glowmark, mustache } from 'glowmark';
+      <section class="section">
+        <div class="label"><b>01</b>Why</div>
+        <div class="body">
+          <h2>Ink stays ink. <em>Glow sits on top.</em></h2>
+          <p class="intro">Most highlighters rewrite your markup with &lt;mark&gt; and &lt;span&gt;. glowmark asks the browser to paint the matches instead, so your HTML is exactly what you rendered.</p>
+          <ul class="features">
+            <li><h3>No DOM changes</h3><p>Painted with the CSS Custom Highlight API.</p></li>
+            <li><h3>Any framework</h3><p>One function. React, Vue, Svelte, Angular, none.</p></li>
+            <li><h3>Search built in</h3><p>words() escapes and ignores case for you.</p></li>
+            <li><h3>Hover tooltips</h3><p>One shared tooltip for every match.</p></li>
+            <li><h3>Follows edits</h3><p>Re-renders and typing update on their own.</p></li>
+            <li><h3>Tiny</h3><p>1.7 kB gzipped, typed, zero dependencies.</p></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="label"><b>02</b>Use</div>
+        <div class="body">
+          <h2>Render as usual. <em>Then point.</em></h2>
+          <p class="intro">Call it once on the element that holds your content. It returns a function that undoes everything.</p>
+          <pre><code class="code">import { glowmark, mustache } from 'glowmark';
 import 'glowmark/style.css';
 
 const destroy = glowmark(element, [
   mustache({ tooltip: (m) =&gt; `Variable: ${m.groups[0]}` }),
 ]);</code></pre>
+        </div>
       </section>
 
-      <section id="try">
-        <h2>Try it</h2>
-        <p>Pick a rule. Hover a highlight for its tooltip. The text is editable.</p>
-        <div class="tabs" role="group" aria-label="Rule">
-          <button class="tab" type="button" data-mode="variables" aria-pressed="true">Variables</button>
-          <button class="tab" type="button" data-mode="templates" aria-pressed="false">Templates</button>
-          <button class="tab" type="button" data-mode="search" aria-pressed="false">Search</button>
-          <button class="tab" type="button" data-mode="custom" aria-pressed="false">Custom regex</button>
-        </div>
-        <div class="demo">
-          <input type="search" id="search" placeholder="Type to search, e.g. order ships" aria-label="Search the text below" hidden />
-          <div id="content" contenteditable="true" spellcheck="false" aria-label="Editable example text">
-            <p>Hi {{ user.name }}, your order <b>#${orderId}</b> ships on {{ delivery.date }}.</p>
-            <p>Questions about your order? Reply to this email. TODO: confirm {{ support.email }}. FIXME: add a tracking link.</p>
+      <section class="section" id="try">
+        <div class="label"><b>03</b>Try it</div>
+        <div class="body">
+          <h2>Pick a pen. <em>Hover the glow.</em></h2>
+          <p class="intro">Each pen is a rule. The sheet is editable: type a new {{ variable }} and watch it light up.</p>
+          <div class="pens" role="group" aria-label="Rule">
+            <button class="pen" type="button" data-mode="variables" aria-pressed="true" style="--c: var(--violet)"><i></i>Variables</button>
+            <button class="pen" type="button" data-mode="templates" aria-pressed="false" style="--c: var(--sky)"><i></i>Templates</button>
+            <button class="pen" type="button" data-mode="search" aria-pressed="false" style="--c: var(--neon)"><i></i>Search</button>
+            <button class="pen" type="button" data-mode="custom" aria-pressed="false" style="--c: var(--rose)"><i></i>Custom regex</button>
           </div>
+          <div class="sheet">
+            <input type="search" id="search" placeholder="search: order ships" aria-label="Search the text below" hidden />
+            <div id="content" contenteditable="true" spellcheck="false" aria-label="Editable example text">
+              <p>Hi {{ user.name }}, your order <b>#${orderId}</b> ships on {{ delivery.date }}.</p>
+              <p>Questions about your order? Reply to this email. TODO: confirm {{ support.email }}. FIXME: add a tracking link.</p>
+            </div>
+          </div>
+          <pre><code class="code" id="snippet"></code></pre>
         </div>
-        <pre><code class="code" id="snippet"></code></pre>
       </section>
 
-      <section>
-        <h2>Your HTML stays the same</h2>
-        <p>This is the live HTML of the text above. No &lt;span&gt;, no &lt;mark&gt;, even while you edit.</p>
-        <pre><code id="html"></code></pre>
-      </section>
-
-      <section>
-        <h2>Frameworks</h2>
-        <p>One function, attached after your framework renders.</p>
-        <div class="tabs" role="group" aria-label="Framework">
-          <button class="tab" type="button" data-fw="react" aria-pressed="true">React</button>
-          <button class="tab" type="button" data-fw="vue" aria-pressed="false">Vue</button>
-          <button class="tab" type="button" data-fw="svelte" aria-pressed="false">Svelte</button>
-          <button class="tab" type="button" data-fw="vanilla" aria-pressed="false">Vanilla</button>
+      <section class="section">
+        <div class="label"><b>04</b>Proof</div>
+        <div class="body">
+          <h2>The HTML, <em>untouched.</em></h2>
+          <p class="intro">This is the live markup of the sheet above, updated as you type.</p>
+          <pre><code id="html"></code></pre>
+          <div class="proof"><i></i><span id="proof-text">0 wrapper elements</span></div>
         </div>
-        <pre><code class="code" id="framework"></code></pre>
       </section>
-    </main>
 
-    <footer>MIT licensed · Made by <a href="https://github.com/shiv7700">Shivang Ramola</a></footer>
+      <section class="section">
+        <div class="label"><b>05</b>Frameworks</div>
+        <div class="body">
+          <h2>One function, <em>everywhere.</em></h2>
+          <p class="intro">Attach after your framework renders. Clean up when it unmounts.</p>
+          <div class="tabs" role="group" aria-label="Framework">
+            <button class="tab" type="button" data-fw="react" aria-pressed="true">React</button>
+            <button class="tab" type="button" data-fw="vue" aria-pressed="false">Vue</button>
+            <button class="tab" type="button" data-fw="svelte" aria-pressed="false">Svelte</button>
+            <button class="tab" type="button" data-fw="vanilla" aria-pressed="false">Vanilla</button>
+          </div>
+          <pre><code class="code" id="framework"></code></pre>
+        </div>
+      </section>
+
+      <footer>
+        <p class="sign">Go make something glow.</p>
+        <div class="fine">
+          <span>MIT · Made by <a href="https://github.com/shiv7700">Shivang Ramola</a></span>
+          <span><a href="https://github.com/shiv7700/glowmark">GitHub</a> · <a href="https://www.npmjs.com/package/glowmark">npm</a></span>
+        </div>
+      </footer>
+    </div>
 
     <script type="module">
       import { glowmark, mustache, template, words } from 'https://cdn.jsdelivr.net/npm/glowmark@0.2/+esm';
+
+      // Hero: a highlighter swipe across the headline, painted with the Highlight API (no wrapper).
+      const swipeText = document.getElementById('swipe').firstChild;
+      if (window.Highlight && CSS.highlights) {
+        const range = new Range();
+        range.setStart(swipeText, 0);
+        range.setEnd(swipeText, 0);
+        CSS.highlights.set('hero-swipe', new Highlight(range));
+        const end = swipeText.length;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          range.setEnd(swipeText, end);
+        } else {
+          const start = performance.now() + 650;
+          const step = (now) => {
+            const t = Math.min(1, Math.max(0, (now - start) / 700));
+            range.setEnd(swipeText, Math.round(end * (1 - Math.pow(1 - t, 3))));
+            if (t < 1) requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+        }
+      }
 
       // Code on this page is colored by glowmark too.
       const codeRules = [
@@ -245,8 +387,6 @@ const destroy = glowmark(element, [
         { name: 'fn', pattern: /\b[A-Za-z_]\w*(?=\()/g },
       ];
       document.querySelectorAll('code.code').forEach((el) => glowmark(el, codeRules));
-
-      glowmark(document.getElementById('tagline'), [mustache({ tooltip: () => 'Painted by glowmark. Your HTML is untouched.' })]);
 
       // Playground
       const content = document.getElementById('content');
@@ -270,7 +410,7 @@ const destroy = glowmark(element, [
         },
         custom: {
           rules: () => [{ name: 'todo', pattern: /\b(?:TODO|FIXME)\b/g, tooltip: (m) => `${m.text}: unfinished` }],
-          code: "glowmark(element, [\n  { name: 'todo', pattern: /\\b(?:TODO|FIXME)\\b/g, tooltip: (m) => `${m.text}: unfinished` },\n]);",
+          code: "glowmark(element, [\n  { name: 'todo', pattern: /\\b(?:TODO|FIXME)\\b/g,\n    tooltip: (m) => `${m.text}: unfinished` },\n]);",
         },
       };
 
@@ -283,13 +423,13 @@ const destroy = glowmark(element, [
         search.hidden = mode !== 'search';
       };
 
-      const selectTab = (group, button) =>
-        group.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+      const press = (group, button) =>
+        group.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
 
       document.querySelectorAll('[data-mode]').forEach((button) =>
         button.addEventListener('click', () => {
           mode = button.dataset.mode;
-          selectTab(button.parentElement, button);
+          press(button.parentElement, button);
           apply();
           if (mode === 'search') search.focus();
         }),
@@ -297,9 +437,14 @@ const destroy = glowmark(element, [
       search.addEventListener('input', apply);
       apply();
 
-      // Live HTML
+      // Live HTML proof
       const html = document.getElementById('html');
-      const showHtml = () => (html.textContent = content.innerHTML.trim().replace(/\n\s+/g, '\n'));
+      const proof = document.getElementById('proof-text');
+      const showHtml = () => {
+        html.textContent = content.innerHTML.trim().replace(/\n\s+/g, '\n');
+        const wrappers = content.querySelectorAll('mark, span').length;
+        proof.textContent = `${wrappers} wrapper elements`;
+      };
       new MutationObserver(showHtml).observe(content, { childList: true, subtree: true, characterData: true });
       showHtml();
 
@@ -313,7 +458,7 @@ const destroy = glowmark(element, [
       const framework = document.getElementById('framework');
       document.querySelectorAll('[data-fw]').forEach((button) =>
         button.addEventListener('click', () => {
-          selectTab(button.parentElement, button);
+          press(button.parentElement, button);
           framework.textContent = frameworks[button.dataset.fw];
         }),
       );
@@ -323,13 +468,12 @@ const destroy = glowmark(element, [
       const copy = document.getElementById('copy');
       copy.addEventListener('click', async () => {
         try {
-          await navigator.clipboard.writeText('npm install glowmark');
-          copy.setAttribute('aria-label', 'Copied');
-          copy.style.color = 'var(--text)';
-          setTimeout(() => { copy.setAttribute('aria-label', 'Copy install command'); copy.style.color = ''; }, 1500);
+          await navigator.clipboard.writeText('npm i glowmark');
+          copy.textContent = 'Copied';
         } catch {
-          copy.setAttribute('aria-label', 'Copy failed');
+          copy.textContent = 'Failed';
         }
+        setTimeout(() => (copy.textContent = 'Copy'), 1500);
       });
     </script>
   </body>
