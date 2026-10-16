@@ -10,6 +10,8 @@
 [![types](https://img.shields.io/npm/types/glowmark)](src/index.ts)
 [![license](https://img.shields.io/npm/l/glowmark.svg)](#license)
 
+**[▶ Try the live demo](https://shiv7700.github.io/glowmark/)**
+
 <img src="docs/demo.png" alt="Text with highlighted {{ user.name }}, ${orderId} and TODO, and a tooltip reading 'Variable: user.name'" width="600" />
 
 </div>
@@ -25,7 +27,7 @@ You have some content, like an email template, a CMS block or a prompt preview, 
 - 🧩 **Works with any framework.** Your framework renders the content and glowmark attaches to the element. Use it with React, Vue, Svelte, Angular or no framework.
 - 📝 **HTML or plain text.** glowmark reads the text on the page, so it doesn't matter where the text came from.
 - 🔄 **Follows changes.** When the content re-renders, the highlights update on their own.
-- 🪶 **Tiny.** About 1.4 kB minified and gzipped, with zero dependencies.
+- 🪶 **Tiny.** About 1.7 kB minified and gzipped, with zero dependencies.
 - 🛡️ **Safe.** It only reads text, never tags, attributes, or `<script>`/`<style>`/`<textarea>` contents. Tooltip text is always shown as plain text.
 - 🔷 **TypeScript.** Types are included.
 

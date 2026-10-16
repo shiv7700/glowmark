@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>glowmark: highlight text without touching the DOM</title>
+    <meta name="description" content="Highlight search terms, {{variables}} and ${templates} in any content, with tooltips. Your HTML is never changed. Zero dependencies, any framework." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23fde047'/%3E%3Ctext x='16' y='23' font-size='20' font-family='system-ui' font-weight='700' text-anchor='middle'%3Eg%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glowmark@0.2/style.css" />
+    <style>
+      :root {
+        --bg: #fafaf9;
+        --surface: #ffffff;
+        --text: #1c1917;
+        --muted: #57534e;
+        --border: #e7e5e4;
+        --code-bg: #f5f5f4;
+        --accent: #7c3aed;
+        --glowmark-search-bg: #fde047;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0c0a09;
+          --surface: #1c1917;
+          --text: #f5f5f4;
+          --muted: #a8a29e;
+          --border: #292524;
+          --code-bg: #141210;
+          --accent: #a78bfa;
+          --glowmark-bg: #713f12;
+          --glowmark-mustache-bg: #4c1d95;
+          --glowmark-template-bg: #1e3a8a;
+          --glowmark-search-bg: #facc15;
+          --glowmark-todo-bg: #7f1d1d;
+          --glowmark-tooltip-bg: #f5f5f4;
+          --glowmark-tooltip-fg: #0c0a09;
+          color-scheme: dark;
+        }
+      }
+      ::highlight(glowmark-search) { background-color: var(--glowmark-search-bg); color: #1c1917; }
+      ::highlight(glowmark-todo) { background-color: var(--glowmark-todo-bg, #ffe4e6); }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      main { max-width: 760px; margin: 0 auto; padding: 56px 16px 80px; }
+      h1 { font-size: clamp(2.2rem, 6vw, 3rem); margin: 0; letter-spacing: -0.03em; }
+      h2 { font-size: 1.15rem; margin: 48px 0 12px; }
+      .lede { font-size: 1.15rem; color: var(--muted); margin: 8px 0 24px; max-width: 34em; }
+      a { color: var(--accent); }
+      code, pre { font: 0.9em/1.5 ui-monospace, 'SF Mono', Menlo, monospace; }
+      pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin: 0; }
+      .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .install { display: flex; align-items: center; gap: 8px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 6px 6px 14px; }
+      .button {
+        border: 1px solid var(--border); background: var(--surface); color: var(--text);
+        border-radius: 6px; padding: 6px 12px; font: inherit; font-size: 0.9rem; cursor: pointer; text-decoration: none;
+      }
+      .button:hover { border-color: var(--muted); }
+      .button:focus-visible, input:focus-visible, [contenteditable]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+      input[type='search'] {
+        width: 100%; font: inherit; padding: 10px 12px; border-radius: 8px;
+        border: 1px solid var(--border); background: var(--bg); color: var(--text); margin-bottom: 16px;
+      }
+      #content { outline: none; min-height: 120px; }
+      #content p { margin: 0 0 12px; }
+      .hint { color: var(--muted); font-size: 0.875rem; margin: 12px 0 0; }
+      .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 20px 0 6px; }
+      #html { white-space: pre-wrap; word-break: break-word; max-height: 220px; }
+      ul.features { padding-left: 1.2em; }
+      ul.features li { margin: 4px 0; }
+      footer { margin-top: 56px; color: var(--muted); font-size: 0.875rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>glowmark</h1>
+      <p class="lede">
+        Highlight search terms, <code>{{variables}}</code> or any pattern in your content, with tooltips.
+        Your HTML is never changed. Zero dependencies, any framework.
+      </p>
+      <div class="actions">
+        <div class="install">
+          <code>npm install glowmark</code>
+          <button class="button" id="copy" type="button">Copy</button>
+        </div>
+        <a class="button" href="https://github.com/shiv7700/glowmark">GitHub</a>
+        <a class="button" href="https://www.npmjs.com/package/glowmark">npm</a>
+      </div>
+
+      <h2>Try it</h2>
+      <div class="card">
+        <input type="search" id="search" placeholder="Search the text below, e.g. order confirm" aria-label="Search the text below" />
+        <div id="content" contenteditable="true" spellcheck="false" aria-label="Editable example content">
+          <p>Hi {{ user.name }}, your order <b>#${orderId}</b> ships on {{ delivery.date }}.</p>
+          <p>Questions about your order? Reply to this email. TODO: confirm the {{ support.email }} address.</p>
+        </div>
+        <p class="hint">Hover a highlight to see its tooltip. The text is editable, so type a new <code>{{ variable }}</code> and watch it light up.</p>
+
+        <p class="label">The actual HTML: no &lt;span&gt;, no &lt;mark&gt;</p>
+        <pre id="html"></pre>
+      </div>
+
+      <h2>Use it</h2>
+      <pre><code>import { glowmark, mustache, words } from 'glowmark';
+import 'glowmark/style.css';
+
+const destroy = glowmark(element, [
+  mustache({ tooltip: (m) =&gt; `Variable: ${m.groups[0]}` }),
+  words(['order', 'confirm']),
+]);</code></pre>
+
+      <h2>Why glowmark</h2>
+      <ul class="features">
+        <li><strong>Your DOM is never touched.</strong> Matches are painted by the browser's CSS Custom Highlight API, so React, editors and your own code are never surprised.</li>
+        <li><strong>Any framework, or none.</strong> One function that attaches to an element.</li>
+        <li><strong>Follows your content.</strong> When the content re-renders or is edited, the highlights update on their own.</li>
+        <li><strong>Tiny.</strong> About 1.7 kB minified and gzipped, with zero dependencies.</li>
+      </ul>
+
+      <footer>MIT licensed · <a href="https://github.com/shiv7700/glowmark#readme">Documentation</a></footer>
+    </main>
+
+    <script type="module">
+      import { glowmark, mustache, template, words } from 'https://cdn.jsdelivr.net/npm/glowmark@0.2/+esm';
+
+      const content = document.getElementById('content');
+      const values = { 'user.name': 'Ada Lovelace', 'delivery.date': 'Friday, 23 October', orderId: 'A-1042' };
+      const valueOf = (name) => (name in values ? `Value: ${values[name]}` : `"${name}" has no value yet`);
+
+      glowmark(content, [
+        mustache({ tooltip: (m) => valueOf(m.groups[0]) }),
+        template({ tooltip: (m) => valueOf(m.groups[0]) }),
+        { name: 'todo', pattern: /\bTODO\b/g, tooltip: () => 'Unfinished item' },
+      ]);
+
+      let stopSearch = () => {};
+      document.getElementById('search').addEventListener('input', (e) => {
+        stopSearch();
+        stopSearch = glowmark(content, [words(e.target.value.split(/\s+/))]);
+      });
+
+      // Show the live HTML to prove nothing is wrapped.
+      const html = document.getElementById('html');
+      const showHtml = () => (html.textContent = content.innerHTML.trim().replace(/\n\s+/g, '\n'));
+      new MutationObserver(showHtml).observe(content, { childList: true, subtree: true, characterData: true });
+      showHtml();
+
+      document.getElementById('copy').addEventListener('click', async (e) => {
+        try {
+          await navigator.clipboard.writeText('npm install glowmark');
+          e.target.textContent = 'Copied';
+        } catch {
+          e.target.textContent = 'Copy failed';
+        }
+        setTimeout(() => (e.target.textContent = 'Copy'), 1500);
+      });
+    </script>
+  </body>
+</html>
