@@ -1,7 +1,7 @@
 {
   "name": "glowmark",
   "version": "0.1.1",
-  "description": "Highlight {{variables}}, ${templates} or any pattern in rendered content, with tooltips, without changing your HTML. Zero dependencies, works with any framework.",
+  "description": "Highlight search terms, {{variables}}, ${templates} or any pattern in rendered content, with tooltips, without changing your HTML. Zero dependencies, works with any framework.",
   "type": "module",
   "exports": {
     ".": {
@@ -27,6 +27,13 @@
   },
   "keywords": [
     "highlight",
+    "highlighter",
+    "search",
+    "highlight-words",
+    "find",
+    "mark",
+    "text-highlight",
+    "css-highlight-api",
     "tooltip",
     "html",
     "mustache",

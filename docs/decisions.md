@@ -67,3 +67,9 @@ The alternative was wrapping only the matches that have tooltips (in a `span`, k
 ### D13. Compute tooltip text on hover (2026-10-16)
 
 `rule.tooltip()` is called when a match is hovered, not when it's found. Tooltips then always read the caller's latest data (for example a lookup table that changes) without a rescan, and matches that are never hovered cost nothing.
+
+### D14. `words()` preset for search, and recreate instead of update (2026-10-16)
+
+Highlighting search terms is the most common reason people look for a highlighter (mark.js, react-highlight-words), so it gets a preset. Search terms are user input, so they're escaped and treated as literal text. Longer terms are tried first so that "react hooks" beats "react". Case is ignored by default because that's what people expect from search. `caseSensitive` is the only option. A whole-word option was left out until someone asks for it.
+
+There's no `update(rules)` API. A new search is `destroy()` followed by a new `glowmark()` call. That costs one rescan, the same as an update would, and keeps the API to one function.

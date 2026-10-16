@@ -2,7 +2,7 @@
 
 # glowmark
 
-**Highlight `{{variables}}`, `${templates}` or any pattern in your content, with tooltips. Your HTML is never changed. Zero dependencies, any framework.**
+**Highlight search terms, `{{variables}}`, `${templates}` or any pattern in your content, with tooltips. Your HTML is never changed. Zero dependencies, any framework.**
 
 [![npm version](https://img.shields.io/npm/v/glowmark.svg)](https://www.npmjs.com/package/glowmark)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/glowmark)](https://bundlephobia.com/package/glowmark)
@@ -20,6 +20,7 @@
 
 You have some content, like an email template, a CMS block or a prompt preview, and you want its placeholders to **stand out and explain themselves on hover**. You don't want a library rewriting your markup to do it.
 
+- 🔍 **Search highlighting built in.** `words(['react', 'hooks'])` handles case and special characters for you.
 - ✨ **Your HTML stays exactly as you rendered it.** Matches are *painted* by the browser (the [CSS Custom Highlight API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API)), not wrapped in `<span>` or `<mark>`.
 - 🧩 **Works with any framework.** Your framework renders the content and glowmark attaches to the element. Use it with React, Vue, Svelte, Angular or no framework.
 - 📝 **HTML or plain text.** glowmark reads the text on the page, so it doesn't matter where the text came from.
@@ -27,6 +28,13 @@ You have some content, like an email template, a CMS block or a prompt preview, 
 - 🪶 **Tiny.** About 1.4 kB minified and gzipped, with zero dependencies.
 - 🛡️ **Safe.** It only reads text, never tags, attributes, or `<script>`/`<style>`/`<textarea>` contents. Tooltip text is always shown as plain text.
 - 🔷 **TypeScript.** Types are included.
+
+## Use cases
+
+- 🔍 **Search results:** highlight the words a user searched for, as they type.
+- ✉️ **Template previews:** emails, notifications and prompts with `{{variables}}` explained on hover.
+- 📚 **Docs and blogs:** explain terms like "SSR" or "API" when the reader hovers over them.
+- 🧪 **Editors and CMS:** flag placeholders, TODOs or banned words without touching the editor's DOM.
 
 ## Contents
 
@@ -218,6 +226,7 @@ interface Match {
 | ------------------- | -------------- | ------------------- |
 | `mustache(options)` | `{{ name }}`   | `name`, trimmed     |
 | `template(options)` | `${ name }`    | `name`, trimmed     |
+| `words(list, options)` | any of `list`, as literal text | none (use `m.text`) |
 
 `options` can set any `Rule` field except `pattern`:
 
@@ -225,13 +234,45 @@ interface Match {
 mustache({ tooltip: (m) => m.groups[0], name: 'variable' });
 ```
 
+`words(list, options)` is for search terms:
+
+- **Literal text.** Characters like `$`, `.` and `(` match themselves, so there's nothing to escape.
+- **Case.** It ignores letter case by default. Pass `{ caseSensitive: true }` to match case exactly.
+- **Longer terms win.** If you search for `react` and `react hooks`, the text "react hooks" is highlighted as one match.
+- **Blank terms are ignored**, and an empty list highlights nothing.
+- **Its rule name is `search`**, so you style it with `::highlight(glowmark-search)`.
+
 ### TypeScript
 
 ```ts
-import type { Rule, Match, PresetOptions } from 'glowmark';
+import type { Rule, Match, PresetOptions, WordsOptions } from 'glowmark';
 ```
 
 ## Recipes
+
+### Search as you type
+
+Rules are fixed when you call `glowmark()`, so for a new search, destroy the old highlight and create a new one. This is cheap.
+
+```js
+import { glowmark, words } from 'glowmark';
+
+let stopSearch = () => {};
+searchInput.addEventListener('input', () => {
+  stopSearch();
+  stopSearch = glowmark(results, [words(searchInput.value.split(/\s+/))]);
+});
+```
+
+```css
+::highlight(glowmark-search) { background-color: #fde047; }
+```
+
+In React, pass the terms as an effect dependency:
+
+```jsx
+useEffect(() => glowmark(ref.current, [words(terms)]), [terms.join(' ')]);
+```
 
 ### Custom rule: `@mentions`
 
@@ -337,11 +378,12 @@ If your users need the tooltip content, show it somewhere else on the page as we
 | --------------------------------- | :------: | :--------: | :-----: | :-------------------: |
 | Leaves your DOM unchanged         |    ✅    |     ❌     |   ❌    |          ❌           |
 | Works with any framework          |    ✅    | ❌ (React) |   ✅    |      ❌ (React)       |
+| Search-term highlighting          |    ✅    |     ❌     |   ✅    |          ✅           |
 | Built-in tooltips                 |    ✅    |     ❌     |   ❌    |          ❌           |
 | `{{}}` / `${}` presets            |    ✅    |     ❌     |   ❌    |          ❌           |
 | Zero dependencies                 |    ✅    |     ❌     |   ✅    |          ❌           |
 
-Need to highlight search terms in very old browsers? Use mark.js. Need to render React components inside HTML? Use Interweave. Need placeholders in your content to stand out, with explanations on hover? That's what glowmark is for.
+Need to highlight search terms in browsers from before 2023? Use mark.js. Need to render React components inside HTML? Use Interweave. Need placeholders in your content to stand out, with explanations on hover? That's what glowmark is for.
 
 ## FAQ
 

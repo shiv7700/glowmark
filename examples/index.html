@@ -7,11 +7,14 @@
     <style>
       body { font: 16px/1.6 system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
       ::highlight(glowmark-todo) { background-color: #ffe4e6; }
+      ::highlight(glowmark-search) { background-color: #fde047; }
     </style>
   </head>
   <body>
     <h1>glowmark demo</h1>
     <p>Run <code>npm run build</code>, serve the repo root, then open <code>/examples/</code>. Hover a highlight.</p>
+
+    <p><input id="search" placeholder="Search this page…" aria-label="Search this page" /></p>
 
     <div id="content">
       <p>Hello {{ user.name }}, your order <b>#${orderId}</b> ships on {{ date }}.</p>
@@ -19,13 +22,20 @@
     </div>
 
     <script type="module">
-      import { glowmark, mustache, template } from '../dist/index.js';
+      import { glowmark, mustache, template, words } from '../dist/index.js';
 
       glowmark(document.getElementById('content'), [
         mustache({ tooltip: (m) => `Variable: ${m.groups[0]}` }),
         template({ tooltip: (m) => `Template value: ${m.groups[0]}` }),
         { name: 'todo', pattern: /\bTODO\b/g, tooltip: () => 'Pending item' },
       ]);
+
+      // Search: recreate the search highlight on every keystroke.
+      let stopSearch = () => {};
+      document.getElementById('search').addEventListener('input', (e) => {
+        stopSearch();
+        stopSearch = glowmark(document.body, [words(e.target.value.split(/\s+/))]);
+      });
     </script>
   </body>
 </html>

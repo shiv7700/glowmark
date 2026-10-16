@@ -19,7 +19,7 @@ glowmark(root, rules)
 | `src/match.ts`     | `Rule` and `Match` types. `findMatches(text, rules)` is pure string logic, with no DOM. |
 | `src/glowmark.ts`  | `glowmark()`: scanning, painting, rescanning on changes, hover hit-testing, cleanup. |
 | `src/tooltip.ts`   | The single tooltip element and its positioning.                                |
-| `src/rules.ts`     | The `mustache()` and `template()` presets.                                     |
+| `src/rules.ts`     | The presets: `mustache()`, `template()`, and `words()` for search terms.       |
 | `src/index.ts`     | Public exports.                                                                |
 
 ## Scan (`findEntries` + `paint`)
