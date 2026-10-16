@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 (unreleased)
+## 0.2.0 (2026-10-16)
 
 - New `words(list, options)` preset for search highlighting. It matches literal text, ignores case by default, prefers longer terms, and ignores blank terms.
 
