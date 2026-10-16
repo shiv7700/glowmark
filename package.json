@@ -1,6 +1,6 @@
 {
   "name": "glowmark",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Highlight {{variables}}, ${templates} or any pattern in rendered content, with tooltips, without changing your HTML. Zero dependencies, works with any framework.",
   "type": "module",
   "exports": {
@@ -8,7 +8,8 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./style.css": "./style.css"
+    "./style.css": "./style.css",
+    "./package.json": "./package.json"
   },
   "types": "./dist/index.d.ts",
   "files": [

@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.1 (2026-10-16)
+
+- Export `glowmark/package.json`, so tools that read a package's metadata can find it.
+
+## 0.1.0 (2026-10-16)
 
 First version.
 
