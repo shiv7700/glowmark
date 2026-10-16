@@ -27,7 +27,7 @@ You have some content, like an email template, a CMS block or a prompt preview, 
 - 🧩 **Works with any framework.** Your framework renders the content and glowmark attaches to the element. Use it with React, Vue, Svelte, Angular or no framework.
 - 📝 **HTML or plain text.** glowmark reads the text on the page, so it doesn't matter where the text came from.
 - 🔄 **Follows changes.** When the content re-renders, the highlights update on their own.
-- 🪶 **Tiny.** About 1.7 kB minified and gzipped, with zero dependencies.
+- 🪶 **Tiny.** About 2 kB minified and gzipped, with zero dependencies.
 - 🛡️ **Safe.** It only reads text, never tags, attributes, or `<script>`/`<style>`/`<textarea>` contents. Tooltip text is always shown as plain text.
 - 🔷 **TypeScript.** Types are included.
 
