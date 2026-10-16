@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>glowmark: highlight text without touching the DOM</title>
     <meta name="description" content="Highlight search terms, {{variables}} and any pattern in your content, with tooltips. Your HTML is never changed. Zero dependencies, any framework." />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23eaff3d'/%3E%3Ctext x='16' y='24' font-size='22' font-family='system-ui,sans-serif' font-weight='700' text-anchor='middle' fill='%2316130f'%3Eg%3C/text%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23eaff3d'/%3E%3Ctext x='16' y='23' font-size='22' font-family='system-ui,sans-serif' font-weight='700' text-anchor='middle' fill='%2316130f'%3Eg%3C/text%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -17,11 +17,16 @@
         --ink: #16130f;
         --ink-soft: #5c564b;
         --rule: #d9d2c1;
+        --line: #c9c0ac;
         --neon: #eaff3d;
         --violet: #d8c4ff;
         --sky: #b9e5ff;
         --rose: #ffc6df;
-        --shadow: #16130f;
+        --error: #b42318;
+
+        --radius: 4px;
+        --border: 1.5px;
+        --lift: 5px;
 
         --glowmark-mustache-bg: var(--violet);
         --glowmark-template-bg: var(--sky);
@@ -29,13 +34,13 @@
         --code-keyword: #a3127f;
         --code-string: #2d6a12;
         --code-fn: #1f4fd1;
-        --code-comment: #9a9282;
+        --code-comment: #8a8272;
         color-scheme: light;
       }
 
-      ::highlight(hero-swipe) { background-color: var(--neon); color: #16130f; }
-      ::highlight(glowmark-search) { background-color: var(--neon); color: #16130f; }
-      ::highlight(glowmark-todo) { background-color: var(--rose); }
+      ::highlight(swipe) { background-color: var(--neon); color: var(--ink); }
+      ::highlight(glowmark-search) { background-color: var(--neon); color: var(--ink); }
+      ::highlight(glowmark-custom) { background-color: var(--rose); }
       ::highlight(glowmark-keyword) { color: var(--code-keyword); }
       ::highlight(glowmark-string) { color: var(--code-string); }
       ::highlight(glowmark-fn) { color: var(--code-fn); }
@@ -45,13 +50,14 @@
         --glowmark-tooltip-bg: var(--ink);
         --glowmark-tooltip-fg: var(--paper);
         font: 500 12px/1.4 'Geist Mono', ui-monospace, monospace;
-        border-radius: 2px;
-        padding: 5px 9px;
+        border-radius: var(--radius);
+        padding: 6px 10px;
         box-shadow: 3px 3px 0 var(--neon);
       }
 
       * { box-sizing: border-box; }
       html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
       body {
         margin: 0;
         background: var(--paper);
@@ -71,124 +77,159 @@
       }
       a { color: inherit; }
       :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-      code, pre, .mono { font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-variant-ligatures: none; }
+      code, pre { font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-variant-ligatures: none; }
+      .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+      .caps { font: 500 12px/1.4 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
 
       .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
 
       /* Top bar */
-      .topbar { display: flex; align-items: baseline; justify-content: space-between; padding: 28px 0; border-bottom: 1px solid var(--rule); }
+      .topbar { display: flex; align-items: center; justify-content: space-between; padding: 24px 0; border-bottom: 1px solid var(--rule); }
       .wordmark { font: 600 20px/1 'Geist', system-ui, sans-serif; letter-spacing: -0.03em; text-decoration: none; }
       .nav { display: flex; gap: 24px; }
-      .nav a { font: 500 12px/1 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; text-decoration: none; color: var(--ink-soft); }
+      .nav a { text-decoration: none; }
       .nav a:hover { color: var(--ink); }
 
       /* Hero */
-      .hero { padding: 96px 0 88px; border-bottom: 1px solid var(--rule); }
+      .hero { padding: 88px 0 80px; border-bottom: 1px solid var(--rule); }
       .hero h1 {
-        font: 600 clamp(48px, 9vw, 112px)/0.98 'Geist', system-ui, sans-serif;
+        font: 600 clamp(46px, 9vw, 112px)/0.98 'Geist', system-ui, sans-serif;
         letter-spacing: -0.055em;
-        margin: 0 0 40px;
+        margin: 0 0 56px;
       }
       .hero h1 span { display: block; }
-      .hero h1 em { font-style: normal; }
       /* Tight leading: draw the lines around the swipe on top of it, so its block never covers their letters. */
       .hero h1 span:not(:nth-child(2)) { position: relative; z-index: 1; }
-      .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px 56px; align-items: end; }
-      .lede { font-size: 20px; line-height: 1.5; max-width: 30em; margin: 0; color: var(--ink-soft); }
+      .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); gap: 48px 64px; align-items: start; }
+      .lede { font-size: 20px; line-height: 1.5; max-width: 30em; margin: 0 0 28px; color: var(--ink-soft); }
       .lede strong { color: var(--ink); font-weight: 500; }
-      .cta { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 280px; }
+      .cta { display: flex; flex-wrap: wrap; gap: 12px; }
       .install {
-        display: flex; align-items: center; justify-content: space-between; gap: 16px;
-        background: var(--ink); color: var(--paper); padding: 14px 14px 14px 18px; border-radius: 4px;
+        display: inline-flex; align-items: center; gap: 16px; min-height: 48px;
+        background: var(--ink); color: var(--paper); padding: 0 8px 0 18px; border-radius: var(--radius);
         font: 500 15px/1 'Geist Mono', monospace;
       }
       .install .prompt { color: var(--neon); margin-right: 10px; }
       .copy {
-        border: 1px solid color-mix(in srgb, var(--paper) 30%, transparent); background: transparent; color: var(--paper);
+        border: var(--border) solid color-mix(in srgb, var(--paper) 35%, transparent); background: transparent; color: var(--paper);
         font: 500 11px/1 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em;
-        padding: 7px 9px; border-radius: 3px; cursor: pointer;
+        min-height: 32px; padding: 0 10px; border-radius: var(--radius); cursor: pointer;
       }
       .copy:hover { background: color-mix(in srgb, var(--paper) 12%, transparent); }
-      .try {
-        display: flex; justify-content: space-between; align-items: center;
-        border: 1.5px solid var(--ink); border-radius: 4px; padding: 13px 18px;
+      .copy:focus-visible { outline-color: var(--neon); }
+      .btn {
+        display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 20px;
+        border: var(--border) solid var(--ink); border-radius: var(--radius); background: var(--sheet);
         font: 500 15px/1 'Geist', sans-serif; text-decoration: none;
-        box-shadow: 4px 4px 0 var(--shadow); transition: transform 0.15s, box-shadow 0.15s;
-        background: var(--sheet);
+        box-shadow: var(--lift) var(--lift) 0 var(--ink); transition: transform 0.15s, box-shadow 0.15s;
       }
-      .try:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--shadow); }
-      .stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 56px; font: 500 12px/1 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+      .btn:hover { transform: translate(-2px, -2px); box-shadow: calc(var(--lift) + 2px) calc(var(--lift) + 2px) 0 var(--ink); }
+      .stats { display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 48px 0 0; padding: 0; list-style: none; }
+      .stats li { white-space: nowrap; }
       .stats b { color: var(--ink); font-weight: 500; }
 
+      /* Mini demo in the hero */
+      .mini {
+        margin: 0; background: var(--sheet); border: var(--border) solid var(--ink); border-radius: var(--radius);
+        box-shadow: var(--lift) var(--lift) 0 var(--ink);
+      }
+      .mini-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+      .mini-bar .dots { display: flex; gap: 6px; }
+      .mini-bar .dots i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--line); }
+      .mini-body { padding: 22px 22px 26px; font-size: 18px; line-height: 1.75; }
+      .mini-body p { margin: 0; }
+      .mini-foot { border-top: 1px solid var(--rule); padding: 10px 14px; display: flex; justify-content: space-between; gap: 12px; }
+      .mini-foot b { color: var(--ink); font-weight: 500; }
+
       /* Numbered sections */
-      .section { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px 48px; padding: 72px 0; border-bottom: 1px solid var(--rule); }
-      .label { font: 500 12px/1.4 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); padding-top: 10px; }
+      .section { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px 48px; padding: 80px 0; border-bottom: 1px solid var(--rule); }
+      .label { padding-top: 14px; }
       .label b { display: block; color: var(--ink); font-weight: 500; margin-bottom: 4px; }
-      .section h2 { font: 600 clamp(28px, 3.6vw, 38px)/1.1 'Geist', system-ui, sans-serif; letter-spacing: -0.04em; margin: 0 0 12px; }
+      .section h2 { font: 600 clamp(32px, 4.4vw, 52px)/1.05 'Geist', system-ui, sans-serif; letter-spacing: -0.045em; margin: 0 0 14px; }
       .section h2 em { font-style: normal; color: var(--ink-soft); }
-      .section .intro { color: var(--ink-soft); margin: 0 0 28px; max-width: 36em; }
-      .body { max-width: 720px; }
+      #try-glow { color: var(--ink); }
+      .section .intro { color: var(--ink-soft); font-size: 17px; margin: 0 0 32px; max-width: 36em; }
+      .body { max-width: 824px; }
 
       pre {
         margin: 0; padding: 20px 22px; overflow-x: auto;
         font-size: 14px; line-height: 1.75;
-        background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px;
+        background: var(--sheet); border: var(--border) solid var(--rule); border-radius: var(--radius);
         /* The default highlight background must not show behind code colors. */
         --glowmark-bg: transparent;
       }
+      .caption { margin: 12px 0 0; }
 
       /* Features */
-      .features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); margin: 0; padding: 0; list-style: none; }
-      .features li { border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 22px 22px 24px; }
+      .features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 0; padding: 0; list-style: none; border: var(--border) solid var(--rule); border-radius: var(--radius); overflow: hidden; }
+      .features li { padding: 22px 22px 24px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+      .features li:nth-child(3n) { border-right: 0; }
+      .features li:nth-last-child(-n + 3) { border-bottom: 0; }
       .features h3 { font: 600 16px/1.3 'Geist', system-ui, sans-serif; letter-spacing: -0.01em; margin: 0 0 6px; }
       .features p { margin: 0; font-size: 15px; color: var(--ink-soft); }
 
       /* Pens (rule picker) */
-      .pens { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+      .pens { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
       .pen {
-        display: inline-flex; align-items: center; gap: 10px; padding: 9px 14px 9px 10px;
-        border: 1.5px solid var(--rule); border-radius: 999px; background: transparent; color: var(--ink);
+        display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 14px 0 12px;
+        border: var(--border) solid var(--rule); border-radius: var(--radius); background: transparent; color: var(--ink);
         font: 500 14px/1 'Geist', sans-serif; cursor: pointer; transition: border-color 0.15s, background-color 0.15s;
       }
       .pen:hover { border-color: var(--ink-soft); }
       .pen[aria-pressed='true'] { border-color: var(--ink); background: var(--sheet); }
-      .pen i { width: 18px; height: 10px; border-radius: 2px 5px 5px 2px; background: var(--c); transform: skewX(-12deg); }
+      .pen i { width: 18px; height: 10px; border-radius: 2px 5px 5px 2px; background: var(--c); transform: skewX(-12deg); outline: 1px solid color-mix(in srgb, var(--ink) 15%, transparent); }
+
+      .controls { margin-bottom: 18px; }
+      .controls[hidden] { display: none; }
+      .field { display: flex; align-items: center; gap: 10px; }
+      .field label { flex: none; min-width: 56px; }
+      .field input {
+        flex: 1; min-width: 0; min-height: 44px; padding: 0 14px; border-radius: var(--radius);
+        border: var(--border) solid var(--ink); background: var(--paper); color: var(--ink);
+        font: 500 15px/1 'Geist Mono', monospace;
+      }
+      .field input[aria-invalid='true'] { border-color: var(--error); }
+      .field-error { color: var(--error); margin: 8px 0 0; }
+      .notice { border: var(--border) solid var(--ink); border-radius: var(--radius); background: var(--neon); padding: 10px 14px; margin: 0 0 18px; color: var(--ink); }
+      .notice[hidden] { display: none; }
 
       .sheet {
-        position: relative; background: var(--sheet); border: 1.5px solid var(--ink); border-radius: 4px;
-        padding: 28px 30px; margin-bottom: 18px; box-shadow: 6px 6px 0 var(--shadow);
+        position: relative; background: var(--sheet); border: var(--border) solid var(--ink); border-radius: var(--radius);
+        padding: 28px 30px; margin-bottom: 18px; box-shadow: var(--lift) var(--lift) 0 var(--ink);
         font-size: 19px; line-height: 1.7;
       }
       .sheet::after {
-        content: 'editable'; position: absolute; top: -10px; right: 18px; padding: 2px 8px;
-        background: var(--paper); border: 1px solid var(--rule); border-radius: 2px;
+        content: 'editable'; position: absolute; top: -11px; right: 18px; padding: 2px 8px;
+        background: var(--paper); border: var(--border) solid var(--rule); border-radius: var(--radius);
         font: 500 10px/1.4 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft);
       }
       .sheet p { margin: 0 0 12px; }
       .sheet p:last-child { margin: 0; }
       #content { outline: none; }
-      #search {
-        width: 100%; padding: 12px 14px; margin-bottom: 20px; border-radius: 4px;
-        border: 1.5px solid var(--ink); background: var(--paper); color: var(--ink);
-        font: 500 15px/1 'Geist Mono', monospace;
-      }
-      #search[hidden] { display: none; }
-      #html { white-space: pre-wrap; word-break: break-word; }
-      .proof { display: flex; align-items: center; gap: 10px; margin-top: 14px; font: 500 12px/1.4 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
-      .proof i { width: 8px; height: 8px; border-radius: 50%; background: #2fbf4a; box-shadow: 0 0 0 4px color-mix(in srgb, #2fbf4a 22%, transparent); }
+      .hint { margin: 0 0 28px; }
 
-      /* Framework tabs */
-      .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--rule); margin-bottom: 18px; }
+      /* Output tabs and framework tabs share one style */
+      .tabs { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--rule); margin-bottom: 16px; }
       .tab {
-        background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 10px 16px;
+        display: inline-flex; align-items: center; gap: 8px; min-height: 40px;
+        background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 0 14px;
         font: 500 13px/1 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); cursor: pointer;
       }
       .tab:hover { color: var(--ink); }
-      .tab[aria-pressed='true'] { color: var(--ink); border-bottom-color: var(--ink); }
+      .tab[aria-selected='true'] { color: var(--ink); border-bottom-color: var(--ink); }
+      .tab svg { width: 16px; height: 16px; flex: none; transition: filter 0.15s, opacity 0.15s; }
+      .tab[aria-selected='false']:not(:hover) svg { filter: grayscale(1); opacity: 0.55; }
+      .output { white-space: pre-wrap; overflow-wrap: anywhere; }
 
-      footer { padding: 80px 0 56px; }
-      .sign { font: 600 clamp(36px, 5.5vw, 64px)/1 'Geist', system-ui, sans-serif; margin: 0 0 28px; letter-spacing: -0.05em; }
-      .fine { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font: 500 12px/1.4 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+      .proof { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; margin-top: 14px; }
+      .proof span { display: inline-flex; align-items: center; gap: 8px; }
+      .proof i { width: 10px; height: 10px; border-radius: 50%; background: var(--neon); outline: 1.5px solid var(--ink); }
+      .proof .bad i { background: var(--rose); }
+      .proof b { color: var(--ink); font-weight: 500; }
+
+      footer { padding: 88px 0 56px; }
+      .sign { font: 600 clamp(38px, 6vw, 72px)/1.05 'Geist', system-ui, sans-serif; margin: 0 0 32px; letter-spacing: -0.05em; }
+      .fine { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding-top: 24px; border-top: 1px solid var(--rule); }
 
       /* Load-in */
       @media (prefers-reduced-motion: no-preference) {
@@ -196,19 +237,36 @@
         @keyframes rise { to { opacity: 1; transform: none; } }
       }
 
-      @media (max-width: 860px) {
-        .hero-grid { grid-template-columns: 1fr; }
-        .cta { min-width: 0; }
+      @media (max-width: 900px) {
+        .hero-grid { grid-template-columns: minmax(0, 1fr); }
         .section { grid-template-columns: minmax(0, 1fr); padding: 56px 0; }
         .label { padding-top: 0; }
-        .features { grid-template-columns: 1fr 1fr; }
+        .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .features li:nth-child(3n) { border-right: 1px solid var(--rule); }
+        .features li:nth-child(2n) { border-right: 0; }
+        .features li:nth-last-child(-n + 3) { border-bottom: 1px solid var(--rule); }
+        .features li:nth-last-child(-n + 2) { border-bottom: 0; }
       }
-      @media (max-width: 520px) {
+      @media (max-width: 560px) {
         .wrap { padding: 0 16px; }
-        .nav { gap: 14px; }
-        .hero { padding: 64px 0; }
-        .features { grid-template-columns: 1fr; }
+        .nav { gap: 16px; }
+        .hero { padding: 56px 0 64px; }
+        .hero h1 { margin-bottom: 36px; }
+        .lede { font-size: 18px; }
+        .cta > * { flex: 1 1 100%; justify-content: space-between; }
+        .features { grid-template-columns: minmax(0, 1fr); }
+        .features li { border-right: 0 !important; border-bottom: 1px solid var(--rule) !important; }
+        .features li:last-child { border-bottom: 0 !important; }
         .sheet { padding: 22px 20px; font-size: 17px; }
+        .mini-body { font-size: 16px; }
+        pre { font-size: 12.5px; padding: 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab { padding: 0 10px; flex: none; }
+        .stats { display: grid; grid-template-columns: repeat(2, max-content); gap: 8px 24px; }
+        .stats li:last-child { grid-column: 1 / -1; }
+        .pen, .tab, .copy { min-height: 44px; }
+        .field { flex-direction: column; align-items: stretch; gap: 8px; }
       }
     </style>
   </head>
@@ -216,60 +274,120 @@
     <div class="wrap">
       <header class="topbar">
         <a class="wordmark" href="#">glowmark</a>
-        <nav class="nav" aria-label="Links">
+        <nav class="nav caps" aria-label="Links">
           <a href="https://github.com/shiv7700/glowmark#readme">Docs</a>
           <a href="https://github.com/shiv7700/glowmark">GitHub</a>
           <a href="https://www.npmjs.com/package/glowmark">npm</a>
         </nav>
       </header>
 
-      <section class="hero">
-        <h1>
+      <section class="hero" aria-labelledby="title">
+        <h1 id="title">
           <span class="rise" style="--i: 0">Highlight text</span>
-          <span class="rise" style="--i: 1"><em id="swipe">without touching</em></span>
+          <span class="rise" style="--i: 1" id="swipe">without touching</span>
           <span class="rise" style="--i: 2">the DOM.</span>
         </h1>
         <div class="hero-grid">
-          <p class="lede rise" style="--i: 3">
-            Search terms, <strong>{{ variables }}</strong> and any pattern, painted straight onto your content with tooltips on hover.
-            No wrappers, no re&#8209;renders, <strong>any&nbsp;framework</strong>.
-          </p>
-          <div class="cta rise" style="--i: 4">
-            <div class="install">
-              <span><span class="prompt">$</span>npm i glowmark</span>
-              <button class="copy" id="copy" type="button">Copy</button>
+          <div>
+            <p class="lede rise" style="--i: 3">
+              Search terms, <strong>{{ variables }}</strong> and any pattern, painted straight onto your content
+              with tooltips on hover and tap. No wrappers, no re&#8209;renders, <strong>any&nbsp;framework</strong>.
+            </p>
+            <div class="cta rise" style="--i: 4">
+              <div class="install">
+                <span><span class="prompt">$</span>npm i glowmark</span>
+                <button class="copy" type="button" data-copy="npm i glowmark">Copy</button>
+              </div>
+              <a class="btn" href="#try">Try it live <span aria-hidden="true">↓</span></a>
             </div>
-            <a class="try" href="#try">Try it live <span aria-hidden="true">↓</span></a>
+            <ul class="stats caps rise" style="--i: 5" aria-label="Facts">
+              <li><b>1.7 kB</b> gzipped</li>
+              <li><b>0</b> dependencies</li>
+              <li><b>v0.3.0</b></li>
+              <li><b>MIT</b></li>
+              <li>Chrome · Edge · Safari 17.2+ · Firefox 140+</li>
+            </ul>
           </div>
-        </div>
-        <div class="stats rise" style="--i: 5">
-          <span><b>1.7 kB</b> gzipped</span>
-          <span><b>0</b> dependencies</span>
-          <span><b>v0.2.0</b></span>
-          <span><b>MIT</b> license</span>
+
+          <figure class="mini rise" style="--i: 4" aria-label="Live example">
+            <div class="mini-bar caps"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>email.html</span></div>
+            <div class="mini-body" id="mini">
+              <p>Hi {{ user.name }}, your order ${orderId} ships on {{ delivery.date }}. Reply with any questions.</p>
+            </div>
+            <figcaption class="mini-foot caps"><span>Live · hover or tap</span><span><b>0</b> wrapper elements</span></figcaption>
+          </figure>
         </div>
       </section>
 
-      <section class="section">
-        <div class="label"><b>01</b>Why</div>
+      <section class="section" id="try" aria-labelledby="try-title">
+        <div class="label caps"><b>01</b>Try it</div>
         <div class="body">
-          <h2>Ink stays ink. <em>Glow sits on top.</em></h2>
+          <h2 id="try-title">Pick a pen. <em>Watch it <span id="try-glow">glow</span>.</em></h2>
+          <p class="intro">Each pen is a rule. The sheet is editable, so type a new {{ variable }} and it lights up as you go.</p>
+
+          <p class="notice caps" id="no-paint" hidden>Your browser can't paint highlights yet (needs Chrome, Edge, Safari 17.2+ or Firefox 140+). Tooltips still work.</p>
+          <div class="pens" role="group" aria-label="Rule">
+            <button class="pen" type="button" data-mode="search" aria-pressed="true" style="--c: var(--neon)"><i></i>Search</button>
+            <button class="pen" type="button" data-mode="variables" aria-pressed="false" style="--c: var(--violet)"><i></i>Variables</button>
+            <button class="pen" type="button" data-mode="templates" aria-pressed="false" style="--c: var(--sky)"><i></i>Templates</button>
+            <button class="pen" type="button" data-mode="custom" aria-pressed="false" style="--c: var(--rose)"><i></i>Custom regex</button>
+          </div>
+
+          <div class="controls" id="search-controls">
+            <div class="field">
+              <label class="caps" for="search">Search</label>
+              <input type="search" id="search" value="order" autocomplete="off" />
+            </div>
+          </div>
+          <div class="controls" id="regex-controls" hidden>
+            <div class="field">
+              <label class="caps" for="regex">Regex</label>
+              <input type="text" id="regex" value="\b(?:TODO|FIXME)\b" spellcheck="false" autocomplete="off" aria-describedby="regex-error" />
+            </div>
+            <p class="field-error caps" id="regex-error" hidden></p>
+          </div>
+
+          <div class="sheet">
+            <div id="content" contenteditable="true" spellcheck="false" aria-label="Editable example text">
+              <p>Hi {{ user.name }}, your order <b>#${orderId}</b> ships on {{ delivery.date }}.</p>
+              <p>Questions about your order? Reply to this email. TODO: confirm {{ support.email }}. FIXME: add a tracking link.</p>
+            </div>
+          </div>
+          <p class="hint caps">Hover or tap a highlight. Keyboard: click into the text and move the cursor onto one.</p>
+
+          <div class="tabs" role="tablist" aria-label="Output">
+            <button class="tab" type="button" role="tab" id="tab-code" aria-controls="output" aria-selected="true" data-out="code">Code</button>
+            <button class="tab" type="button" role="tab" id="tab-html" aria-controls="output" aria-selected="false" tabindex="-1" data-out="html">Your HTML</button>
+            <button class="tab" type="button" role="tab" id="tab-mark" aria-controls="output" aria-selected="false" tabindex="-1" data-out="mark">With &lt;mark&gt;</button>
+          </div>
+          <pre class="output" id="output" role="tabpanel" aria-labelledby="tab-code"><code></code></pre>
+          <div class="proof caps">
+            <span><i></i>glowmark: <b id="count-glowmark">0</b>&nbsp;wrapper elements</span>
+            <span class="bad"><i></i>a &lt;mark&gt; highlighter: <b id="count-mark">0</b></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="why-title">
+        <div class="label caps"><b>02</b>Why</div>
+        <div class="body">
+          <h2 id="why-title">Ink stays ink. <em>Glow sits on top.</em></h2>
           <p class="intro">Most highlighters rewrite your markup with &lt;mark&gt; and &lt;span&gt;. glowmark asks the browser to paint the matches instead, so your HTML is exactly what you rendered.</p>
           <ul class="features">
             <li><h3>No DOM changes</h3><p>Painted with the CSS Custom Highlight API.</p></li>
             <li><h3>Any framework</h3><p>One function. React, Vue, Svelte, Angular, none.</p></li>
             <li><h3>Search built in</h3><p>words() escapes and ignores case for you.</p></li>
-            <li><h3>Hover tooltips</h3><p>One shared tooltip for every match.</p></li>
+            <li><h3>Hover, tap, keyboard</h3><p>One shared tooltip, opened however people read.</p></li>
             <li><h3>Follows edits</h3><p>Re-renders and typing update on their own.</p></li>
             <li><h3>Tiny</h3><p>1.7 kB gzipped, typed, zero dependencies.</p></li>
           </ul>
         </div>
       </section>
 
-      <section class="section">
-        <div class="label"><b>02</b>Use</div>
+      <section class="section" aria-labelledby="use-title">
+        <div class="label caps"><b>03</b>Use</div>
         <div class="body">
-          <h2>Render as usual. <em>Then point.</em></h2>
+          <h2 id="use-title">Render as usual. <em>Then point.</em></h2>
           <p class="intro">Call it once on the element that holds your content. It returns a function that undoes everything.</p>
           <pre><code class="code">import { glowmark, mustache } from 'glowmark';
 import 'glowmark/style.css';
@@ -277,185 +395,270 @@ import 'glowmark/style.css';
 const destroy = glowmark(element, [
   mustache({ tooltip: (m) =&gt; `Variable: ${m.groups[0]}` }),
 ]);</code></pre>
+          <p class="caption caps">The code on this page is colored by glowmark, too.</p>
         </div>
       </section>
 
-      <section class="section" id="try">
-        <div class="label"><b>03</b>Try it</div>
+      <section class="section" aria-labelledby="fw-title">
+        <div class="label caps"><b>04</b>Frameworks</div>
         <div class="body">
-          <h2>Pick a pen. <em>Hover the glow.</em></h2>
-          <p class="intro">Each pen is a rule. The sheet is editable: type a new {{ variable }} and watch it light up.</p>
-          <div class="pens" role="group" aria-label="Rule">
-            <button class="pen" type="button" data-mode="variables" aria-pressed="true" style="--c: var(--violet)"><i></i>Variables</button>
-            <button class="pen" type="button" data-mode="templates" aria-pressed="false" style="--c: var(--sky)"><i></i>Templates</button>
-            <button class="pen" type="button" data-mode="search" aria-pressed="false" style="--c: var(--neon)"><i></i>Search</button>
-            <button class="pen" type="button" data-mode="custom" aria-pressed="false" style="--c: var(--rose)"><i></i>Custom regex</button>
-          </div>
-          <div class="sheet">
-            <input type="search" id="search" placeholder="search: order ships" aria-label="Search the text below" hidden />
-            <div id="content" contenteditable="true" spellcheck="false" aria-label="Editable example text">
-              <p>Hi {{ user.name }}, your order <b>#${orderId}</b> ships on {{ delivery.date }}.</p>
-              <p>Questions about your order? Reply to this email. TODO: confirm {{ support.email }}. FIXME: add a tracking link.</p>
-            </div>
-          </div>
-          <pre><code class="code" id="snippet"></code></pre>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="label"><b>04</b>Proof</div>
-        <div class="body">
-          <h2>The HTML, <em>untouched.</em></h2>
-          <p class="intro">This is the live markup of the sheet above, updated as you type.</p>
-          <pre><code id="html"></code></pre>
-          <div class="proof"><i></i><span id="proof-text">0 wrapper elements</span></div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="label"><b>05</b>Frameworks</div>
-        <div class="body">
-          <h2>One function, <em>everywhere.</em></h2>
+          <h2 id="fw-title">One function, <em>everywhere.</em></h2>
           <p class="intro">Attach after your framework renders. Clean up when it unmounts.</p>
-          <div class="tabs" role="group" aria-label="Framework">
-            <button class="tab" type="button" data-fw="react" aria-pressed="true">React</button>
-            <button class="tab" type="button" data-fw="vue" aria-pressed="false">Vue</button>
-            <button class="tab" type="button" data-fw="svelte" aria-pressed="false">Svelte</button>
-            <button class="tab" type="button" data-fw="vanilla" aria-pressed="false">Vanilla</button>
+          <div class="tabs" role="tablist" aria-label="Framework">
+            <button class="tab" type="button" role="tab" aria-selected="true" id="fw-react" aria-controls="framework" data-fw="react"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#087EA4" d="M14.23 12.004a2.236 2.236 0 0 1-2.235 2.236 2.236 2.236 0 0 1-2.236-2.236 2.236 2.236 0 0 1 2.235-2.236 2.236 2.236 0 0 1 2.236 2.236zm2.648-10.69c-1.346 0-3.107.96-4.888 2.622-1.78-1.653-3.542-2.602-4.887-2.602-.41 0-.783.093-1.106.278-1.375.793-1.683 3.264-.973 6.365C1.98 8.917 0 10.42 0 12.004c0 1.59 1.99 3.097 5.043 4.03-.704 3.113-.39 5.588.988 6.38.32.187.69.275 1.102.275 1.345 0 3.107-.96 4.888-2.624 1.78 1.654 3.542 2.603 4.887 2.603.41 0 .783-.09 1.106-.275 1.374-.792 1.683-3.263.973-6.365C22.02 15.096 24 13.59 24 12.004c0-1.59-1.99-3.097-5.043-4.032.704-3.11.39-5.587-.988-6.38-.318-.184-.688-.277-1.092-.278zm-.005 1.09v.006c.225 0 .406.044.558.127.666.382.955 1.835.73 3.704-.054.46-.142.945-.25 1.44-.96-.236-2.006-.417-3.107-.534-.66-.905-1.345-1.727-2.035-2.447 1.592-1.48 3.087-2.292 4.105-2.295zm-9.77.02c1.012 0 2.514.808 4.11 2.28-.686.72-1.37 1.537-2.02 2.442-1.107.117-2.154.298-3.113.538-.112-.49-.195-.964-.254-1.42-.23-1.868.054-3.32.714-3.707.19-.09.4-.127.563-.132zm4.882 3.05c.455.468.91.992 1.36 1.564-.44-.02-.89-.034-1.345-.034-.46 0-.915.01-1.36.034.44-.572.895-1.096 1.345-1.565zM12 8.1c.74 0 1.477.034 2.202.093.406.582.802 1.203 1.183 1.86.372.64.71 1.29 1.018 1.946-.308.655-.646 1.31-1.013 1.95-.38.66-.773 1.288-1.18 1.87-.728.063-1.466.098-2.21.098-.74 0-1.477-.035-2.202-.093-.406-.582-.802-1.204-1.183-1.86-.372-.64-.71-1.29-1.018-1.946.303-.657.646-1.313 1.013-1.954.38-.66.773-1.286 1.18-1.868.728-.064 1.466-.098 2.21-.098zm-3.635.254c-.24.377-.48.763-.704 1.16-.225.39-.435.782-.635 1.174-.265-.656-.49-1.31-.676-1.947.64-.15 1.315-.283 2.015-.386zm7.26 0c.695.103 1.365.23 2.006.387-.18.632-.405 1.282-.66 1.933-.2-.39-.41-.783-.64-1.174-.225-.392-.465-.774-.705-1.146zm3.063.675c.484.15.944.317 1.375.498 1.732.74 2.852 1.708 2.852 2.476-.005.768-1.125 1.74-2.857 2.475-.42.18-.88.342-1.355.493-.28-.958-.646-1.956-1.1-2.98.45-1.017.81-2.01 1.085-2.964zm-13.395.004c.278.96.645 1.957 1.1 2.98-.45 1.017-.812 2.01-1.086 2.964-.484-.15-.944-.318-1.37-.5-1.732-.737-2.852-1.706-2.852-2.474 0-.768 1.12-1.742 2.852-2.476.42-.18.88-.342 1.356-.494zm11.678 4.28c.265.657.49 1.312.676 1.948-.64.157-1.316.29-2.016.39.24-.375.48-.762.705-1.158.225-.39.435-.788.636-1.18zm-9.945.02c.2.392.41.783.64 1.175.23.39.465.772.705 1.143-.695-.102-1.365-.23-2.006-.386.18-.63.406-1.282.66-1.933zM17.92 16.32c.112.493.2.968.254 1.423.23 1.868-.054 3.32-.714 3.708-.147.09-.338.128-.563.128-1.012 0-2.514-.807-4.11-2.28.686-.72 1.37-1.536 2.02-2.44 1.107-.118 2.154-.3 3.113-.54zm-11.83.01c.96.234 2.006.415 3.107.532.66.905 1.345 1.727 2.035 2.446-1.595 1.483-3.092 2.295-4.11 2.295-.22-.005-.406-.05-.553-.132-.666-.38-.955-1.834-.73-3.703.054-.46.142-.944.25-1.438zm4.56.64c.44.02.89.034 1.345.034.46 0 .915-.01 1.36-.034-.44.572-.895 1.095-1.345 1.565-.455-.47-.91-.993-1.36-1.565z"/></svg>React</button>
+            <button class="tab" type="button" role="tab" aria-selected="false" tabindex="-1" id="fw-vue" aria-controls="framework" data-fw="vue"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4FC08D" d="M24,1.61H14.06L12,5.16,9.94,1.61H0L12,22.39ZM12,14.08,5.16,2.23H9.59L12,6.41l2.41-4.18h4.43Z"/></svg>Vue</button>
+            <button class="tab" type="button" role="tab" aria-selected="false" tabindex="-1" id="fw-svelte" aria-controls="framework" data-fw="svelte"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FF3E00" d="M10.354 21.125a4.44 4.44 0 0 1-4.765-1.767 4.109 4.109 0 0 1-.703-3.107 3.898 3.898 0 0 1 .134-.522l.105-.321.287.21a7.21 7.21 0 0 0 2.186 1.092l.208.063-.02.208a1.253 1.253 0 0 0 .226.83 1.337 1.337 0 0 0 1.435.533 1.231 1.231 0 0 0 .343-.15l5.59-3.562a1.164 1.164 0 0 0 .524-.778 1.242 1.242 0 0 0-.211-.937 1.338 1.338 0 0 0-1.435-.533 1.23 1.23 0 0 0-.343.15l-2.133 1.36a4.078 4.078 0 0 1-1.135.499 4.44 4.44 0 0 1-4.765-1.766 4.108 4.108 0 0 1-.702-3.108 3.855 3.855 0 0 1 1.742-2.582l5.589-3.563a4.072 4.072 0 0 1 1.135-.499 4.44 4.44 0 0 1 4.765 1.767 4.109 4.109 0 0 1 .703 3.107 3.943 3.943 0 0 1-.134.522l-.105.321-.286-.21a7.204 7.204 0 0 0-2.187-1.093l-.208-.063.02-.207a1.255 1.255 0 0 0-.226-.831 1.337 1.337 0 0 0-1.435-.532 1.231 1.231 0 0 0-.343.15L8.62 9.368a1.162 1.162 0 0 0-.524.778 1.24 1.24 0 0 0 .211.937 1.338 1.338 0 0 0 1.435.533 1.235 1.235 0 0 0 .344-.151l2.132-1.36a4.067 4.067 0 0 1 1.135-.498 4.44 4.44 0 0 1 4.765 1.766 4.108 4.108 0 0 1 .702 3.108 3.857 3.857 0 0 1-1.742 2.583l-5.589 3.562a4.072 4.072 0 0 1-1.135.499m10.358-17.95C18.484-.015 14.082-.96 10.9 1.068L5.31 4.63a6.412 6.412 0 0 0-2.896 4.295 6.753 6.753 0 0 0 .666 4.336 6.43 6.43 0 0 0-.96 2.396 6.833 6.833 0 0 0 1.168 5.167c2.229 3.19 6.63 4.135 9.812 2.108l5.59-3.562a6.41 6.41 0 0 0 2.896-4.295 6.756 6.756 0 0 0-.665-4.336 6.429 6.429 0 0 0 .958-2.396 6.831 6.831 0 0 0-1.167-5.168Z"/></svg>Svelte</button>
+            <button class="tab" type="button" role="tab" aria-selected="false" tabindex="-1" id="fw-angular" aria-controls="framework" data-fw="angular"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#DD0031" d="M16.712 17.711H7.288l-1.204 2.916L12 24l5.916-3.373-1.204-2.916ZM14.692 0l7.832 16.855.814-12.856L14.692 0ZM9.308 0 .662 3.999l.814 12.856L9.308 0Zm-.405 13.93h6.198L12 6.396 8.903 13.93Z"/></svg>Angular</button>
+            <button class="tab" type="button" role="tab" aria-selected="false" tabindex="-1" id="fw-vanilla" aria-controls="framework" data-fw="vanilla"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" fill="#16130f"/><path fill="#F7DF1E" d="M0 0h24v24H0V0zm22.034 18.276c-.175-1.095-.888-2.015-3.003-2.873-.736-.345-1.554-.585-1.797-1.14-.091-.33-.105-.51-.046-.705.15-.646.915-.84 1.515-.66.39.12.75.42.976.9 1.034-.676 1.034-.676 1.755-1.125-.27-.42-.404-.601-.586-.78-.63-.705-1.469-1.065-2.834-1.034l-.705.089c-.676.165-1.32.525-1.71 1.005-1.14 1.291-.811 3.541.569 4.471 1.365 1.02 3.361 1.244 3.616 2.205.24 1.17-.87 1.545-1.966 1.41-.811-.18-1.26-.586-1.755-1.336l-1.83 1.051c.21.48.45.689.81 1.109 1.74 1.756 6.09 1.666 6.871-1.004.029-.09.24-.705.074-1.65l.046.067zm-8.983-7.245h-2.248c0 1.938-.009 3.864-.009 5.805 0 1.232.063 2.363-.138 2.711-.33.689-1.18.601-1.566.48-.396-.196-.597-.466-.83-.855-.063-.105-.11-.196-.127-.196l-1.825 1.125c.305.63.75 1.172 1.324 1.517.855.51 2.004.675 3.207.405.783-.226 1.458-.691 1.811-1.411.51-.93.402-2.07.397-3.346.012-2.054 0-4.109 0-6.179l.004-.056z"/></svg>JavaScript</button>
           </div>
-          <pre><code class="code" id="framework"></code></pre>
+          <pre id="framework" role="tabpanel" aria-labelledby="fw-react"><code class="code"></code></pre>
         </div>
       </section>
 
       <footer>
-        <p class="sign">Go make something glow.</p>
+        <p class="sign">Go make something <span id="sign-glow">glow</span>.</p>
         <div class="fine">
-          <span>MIT · Made by <a href="https://github.com/shiv7700">Shivang Ramola</a></span>
-          <span><a href="https://github.com/shiv7700/glowmark">GitHub</a> · <a href="https://www.npmjs.com/package/glowmark">npm</a></span>
+          <div class="install">
+            <span><span class="prompt">$</span>npm i glowmark</span>
+            <button class="copy" type="button" data-copy="npm i glowmark">Copy</button>
+          </div>
+          <span class="caps">MIT · Made by <a href="https://github.com/shiv7700">Shivang Ramola</a> · <a href="https://github.com/shiv7700/glowmark">GitHub</a> · <a href="https://www.npmjs.com/package/glowmark">npm</a></span>
         </div>
       </footer>
     </div>
+    <p class="sr-only" aria-live="polite" id="announce"></p>
 
     <script type="module">
-      import { glowmark, mustache, template, words } from 'https://cdn.jsdelivr.net/npm/glowmark@0.2/+esm';
+      // Local preview uses the fresh build; the published page uses the CDN.
+      const local = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+      const { glowmark, mustache, template, words } = await import(
+        local ? '../dist/index.js' : 'https://cdn.jsdelivr.net/npm/glowmark@0.3/+esm'
+      );
 
-      // Hero: a highlighter swipe across the headline, painted with the Highlight API (no wrapper).
-      const swipeText = document.getElementById('swipe').firstChild;
-      if (window.Highlight && CSS.highlights) {
+      const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const canPaint = 'Highlight' in window && !!CSS.highlights;
+
+      // A highlighter swipe painted with the Highlight API: no wrapper element.
+      const swipes = canPaint ? new Highlight() : null;
+      if (canPaint) CSS.highlights.set('swipe', swipes);
+      const swipe = (el, delay) => {
+        if (!canPaint) return;
+        const text = el.firstChild;
         const range = new Range();
-        range.setStart(swipeText, 0);
-        range.setEnd(swipeText, 0);
-        CSS.highlights.set('hero-swipe', new Highlight(range));
-        const end = swipeText.length;
-        if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          range.setEnd(swipeText, end);
-        } else {
-          const start = performance.now() + 650;
-          const step = (now) => {
-            const t = Math.min(1, Math.max(0, (now - start) / 700));
-            range.setEnd(swipeText, Math.round(end * (1 - Math.pow(1 - t, 3))));
-            if (t < 1) requestAnimationFrame(step);
-          };
-          requestAnimationFrame(step);
-        }
+        range.setStart(text, 0);
+        range.setEnd(text, reduceMotion ? text.length : 0);
+        swipes.add(range);
+        if (reduceMotion) return;
+        const start = performance.now() + delay;
+        const step = (now) => {
+          const t = Math.min(1, Math.max(0, (now - start) / 700));
+          range.setEnd(text, Math.round(text.length * (1 - Math.pow(1 - t, 3))));
+          if (t < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      };
+      swipe(document.getElementById('swipe'), 650);
+      // Swipe the other "glow" words once they scroll into view.
+      for (const id of ['try-glow', 'sign-glow']) {
+        const el = document.getElementById(id);
+        new IntersectionObserver((items, io) => {
+          if (items[0].isIntersecting) { swipe(el, 150); io.disconnect(); }
+        }, { threshold: 0.8 }).observe(el);
       }
+      document.getElementById('no-paint').hidden = canPaint;
 
       // Code on this page is colored by glowmark too.
       const codeRules = [
         { name: 'comment', pattern: /\/\/[^\n]*/g },
         { name: 'string', pattern: /'[^'\n]*'|`[^`\n]*`|"[^"\n]*"/g },
-        { name: 'keyword', pattern: /\b(?:import|from|const|let|export|return|new|function)\b/g },
+        { name: 'keyword', pattern: /\b(?:import|from|const|let|export|return|new|function|class)\b/g },
         { name: 'fn', pattern: /\b[A-Za-z_]\w*(?=\()/g },
       ];
       document.querySelectorAll('code.code').forEach((el) => glowmark(el, codeRules));
 
-      // Playground
-      const content = document.getElementById('content');
-      const search = document.getElementById('search');
-      const snippet = document.getElementById('snippet');
       const values = { 'user.name': 'Ada Lovelace', 'delivery.date': 'Friday, 23 October', 'support.email': 'help@example.com', orderId: 'A-1042' };
       const valueOf = (m) => values[m.groups[0]] ?? `"${m.groups[0]}" has no value`;
 
+      // Hero mini demo: a tooltip walks through the matches until the visitor takes over.
+      const mini = document.getElementById('mini');
+      const miniLine = mini.querySelector('p');
+      glowmark(mini, [mustache({ tooltip: (m) => `Value: ${valueOf(m)}` }), template({ tooltip: (m) => `Value: ${valueOf(m)}` })]);
+      const miniTargets = () => {
+        const text = miniLine.firstChild;
+        return [...text.data.matchAll(/\{\{[^}]+\}\}|\$\{[^}]+\}/g)].map((m) => {
+          const r = new Range();
+          r.setStart(text, m.index);
+          r.setEnd(text, m.index + m[0].length);
+          return r;
+        });
+      };
+      let tourStep = 0;
+      let touring = true;
+      let inView = false;
+      const tour = () => {
+        if (!touring || !inView || document.hidden) return;
+        const targets = miniTargets();
+        const rect = targets[tourStep++ % targets.length].getClientRects()[0];
+        miniLine.dispatchEvent(
+          new MouseEvent('mousemove', { bubbles: true, clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 }),
+        );
+      };
+      const stopTour = () => { touring = false; };
+      ['pointerdown', 'pointerenter', 'focusin'].forEach((type) => mini.addEventListener(type, stopTour, { once: true }));
+      new IntersectionObserver((items) => {
+        inView = items[0].isIntersecting;
+        if (inView) tour();
+      }, { threshold: 0.6 }).observe(mini);
+      if (!reduceMotion) setInterval(tour, 2600);
+
+      // Playground
+      const content = document.getElementById('content');
+      const search = document.getElementById('search');
+      const regex = document.getElementById('regex');
+      const regexError = document.getElementById('regex-error');
+      let customPattern = /\b(?:TODO|FIXME)\b/g;
+
+      const quoteList = (list) => list.map((w) => `'${w}'`).join(', ');
       const modes = {
+        search: {
+          rules: () => [words(search.value.split(/\s+/), { tooltip: (m) => `Search match: ${m.text}` })],
+          code: () => `glowmark(element, [\n  words([${quoteList(search.value.split(/\s+/).filter(Boolean))}], {\n    tooltip: (m) => \`Search match: \${m.text}\`,\n  }),\n]);`,
+        },
         variables: {
           rules: () => [mustache({ tooltip: valueOf })],
-          code: "glowmark(element, [\n  mustache({ tooltip: (m) => values[m.groups[0]] }),\n]);",
+          code: () => 'glowmark(element, [\n  mustache({ tooltip: (m) => values[m.groups[0]] }),\n]);',
         },
         templates: {
           rules: () => [template({ tooltip: valueOf })],
-          code: "glowmark(element, [\n  template({ tooltip: (m) => values[m.groups[0]] }),\n]);",
-        },
-        search: {
-          rules: () => [words(search.value.split(/\s+/))],
-          code: "// Recreate on every keystroke\ndestroy();\ndestroy = glowmark(element, [words(query.split(' '))]);",
+          code: () => 'glowmark(element, [\n  template({ tooltip: (m) => values[m.groups[0]] }),\n]);',
         },
         custom: {
-          rules: () => [{ name: 'todo', pattern: /\b(?:TODO|FIXME)\b/g, tooltip: (m) => `${m.text}: unfinished` }],
-          code: "glowmark(element, [\n  { name: 'todo', pattern: /\\b(?:TODO|FIXME)\\b/g,\n    tooltip: (m) => `${m.text}: unfinished` },\n]);",
+          rules: () => [{ name: 'custom', pattern: customPattern, tooltip: (m) => `Matched: ${m.text}` }],
+          code: () => `glowmark(element, [\n  { name: 'custom', pattern: /${customPattern.source}/g,\n    tooltip: (m) => \`Matched: \${m.text}\` },\n]);`,
         },
       };
 
-      let mode = 'variables';
+      let mode = 'search';
+      let output = 'code';
       let destroy = () => {};
+      const outputCode = document.querySelector('#output code');
+      glowmark(outputCode, codeRules);
+      const liveHtml = () => content.innerHTML.trim().replace(/\n\s+/g, '\n');
+
+      // What a <mark>-based highlighter would produce, for comparison only.
+      const withMarks = () => {
+        const { pattern } = modes[mode].rules()[0];
+        const global = new RegExp(pattern.source, pattern.flags.replace(/[gy]/g, '') + 'g');
+        let count = 0;
+        const html = liveHtml()
+          .split(/(<[^>]+>)/)
+          .map((part) => (part.startsWith('<') ? part : part.replace(global, (m) => (m ? (count++, `<mark>${m}</mark>`) : m))))
+          .join('');
+        return { html, count };
+      };
+
+      const render = () => {
+        const marks = withMarks();
+        document.getElementById('count-glowmark').textContent = content.querySelectorAll('mark, span').length;
+        document.getElementById('count-mark').textContent = marks.count;
+        outputCode.textContent = output === 'code' ? modes[mode].code() : output === 'html' ? liveHtml() : marks.html;
+      };
+
       const apply = () => {
         destroy();
         destroy = glowmark(content, modes[mode].rules());
-        snippet.textContent = modes[mode].code;
-        search.hidden = mode !== 'search';
+        document.getElementById('search-controls').hidden = mode !== 'search';
+        document.getElementById('regex-controls').hidden = mode !== 'custom';
+        render();
       };
 
-      const press = (group, button) =>
-        group.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
-
-      document.querySelectorAll('[data-mode]').forEach((button) =>
+      const pens = [...document.querySelectorAll('[data-mode]')];
+      pens.forEach((button) =>
         button.addEventListener('click', () => {
           mode = button.dataset.mode;
-          press(button.parentElement, button);
+          pens.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
           apply();
-          if (mode === 'search') search.focus();
         }),
       );
       search.addEventListener('input', apply);
+      regex.addEventListener('input', () => {
+        try {
+          customPattern = new RegExp(regex.value, 'g');
+          regex.removeAttribute('aria-invalid');
+          regexError.hidden = true;
+          apply();
+        } catch {
+          regex.setAttribute('aria-invalid', 'true');
+          regexError.textContent = 'Not a valid regex yet';
+          regexError.hidden = false;
+        }
+      });
+
+      const selectTab = (tabs, tab) =>
+        tabs.forEach((t) => {
+          t.setAttribute('aria-selected', String(t === tab));
+          t.tabIndex = t === tab ? 0 : -1;
+        });
+      // Tab pattern keys: arrows move between tabs, Home and End jump to the ends.
+      const arrowKeys = (tabs) =>
+        tabs.forEach((tab, i) =>
+          tab.addEventListener('keydown', (e) => {
+            const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+            if (next === undefined) return;
+            e.preventDefault();
+            const target = tabs[(next + tabs.length) % tabs.length];
+            target.focus();
+            target.click();
+          }),
+        );
+      const outputTabs = [...document.querySelectorAll('[data-out]')];
+      outputTabs.forEach((tab) =>
+        tab.addEventListener('click', () => {
+          output = tab.dataset.out;
+          selectTab(outputTabs, tab);
+          document.getElementById('output').setAttribute('aria-labelledby', tab.id);
+          render();
+        }),
+      );
+      arrowKeys(outputTabs);
+      new MutationObserver(render).observe(content, { childList: true, subtree: true, characterData: true });
       apply();
 
-      // Live HTML proof
-      const html = document.getElementById('html');
-      const proof = document.getElementById('proof-text');
-      const showHtml = () => {
-        html.textContent = content.innerHTML.trim().replace(/\n\s+/g, '\n');
-        const wrappers = content.querySelectorAll('mark, span').length;
-        proof.textContent = `${wrappers} wrapper elements`;
-      };
-      new MutationObserver(showHtml).observe(content, { childList: true, subtree: true, characterData: true });
-      showHtml();
-
-      // Framework snippets
+      // Frameworks
       const frameworks = {
         react: "function Preview({ html }) {\n  const ref = useRef(null);\n  useEffect(() => glowmark(ref.current, rules), []);\n  return <div ref={ref} dangerouslySetInnerHTML={{ __html: html }} />;\n}",
         vue: "const el = ref();\nlet destroy;\nonMounted(() => (destroy = glowmark(el.value, rules)));\nonUnmounted(() => destroy());",
         svelte: "let el;\n$effect(() => glowmark(el, rules));",
+        angular: "export class PreviewComponent {\n  @ViewChild('box') box!: ElementRef;\n  private destroy?: () => void;\n  ngAfterViewInit() { this.destroy = glowmark(this.box.nativeElement, rules); }\n  ngOnDestroy() { this.destroy?.(); }\n}",
         vanilla: "const destroy = glowmark(document.querySelector('#preview'), rules);",
       };
-      const framework = document.getElementById('framework');
-      document.querySelectorAll('[data-fw]').forEach((button) =>
-        button.addEventListener('click', () => {
-          press(button.parentElement, button);
-          framework.textContent = frameworks[button.dataset.fw];
+      const fwCode = document.querySelector('#framework code');
+      const fwTabs = [...document.querySelectorAll('[data-fw]')];
+      fwTabs.forEach((tab) =>
+        tab.addEventListener('click', () => {
+          selectTab(fwTabs, tab);
+          document.getElementById('framework').setAttribute('aria-labelledby', tab.id);
+          fwCode.textContent = frameworks[tab.dataset.fw];
         }),
       );
-      framework.textContent = frameworks.react;
+      arrowKeys(fwTabs);
+      fwCode.textContent = frameworks.react;
 
-      // Copy
-      const copy = document.getElementById('copy');
-      copy.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText('npm i glowmark');
-          copy.textContent = 'Copied';
-        } catch {
-          copy.textContent = 'Failed';
-        }
-        setTimeout(() => (copy.textContent = 'Copy'), 1500);
-      });
+      // Copy buttons, announced to screen readers
+      const announce = document.getElementById('announce');
+      document.querySelectorAll('[data-copy]').forEach((button) =>
+        button.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(button.dataset.copy);
+            button.textContent = 'Copied';
+            announce.textContent = 'Install command copied';
+          } catch {
+            button.textContent = 'Failed';
+            announce.textContent = 'Copy failed';
+          }
+          setTimeout(() => { button.textContent = 'Copy'; announce.textContent = ''; }, 1500);
+        }),
+      );
     </script>
   </body>
 </html>
