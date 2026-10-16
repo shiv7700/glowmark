@@ -4,161 +4,332 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>glowmark: highlight text without touching the DOM</title>
-    <meta name="description" content="Highlight search terms, {{variables}} and ${templates} in any content, with tooltips. Your HTML is never changed. Zero dependencies, any framework." />
+    <meta name="description" content="Highlight search terms, {{variables}} and any pattern in your content, with tooltips. Your HTML is never changed. Zero dependencies, any framework." />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23fde047'/%3E%3Ctext x='16' y='23' font-size='20' font-family='system-ui' font-weight='700' text-anchor='middle'%3Eg%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glowmark@0.2/style.css" />
     <style>
       :root {
-        --bg: #fafaf9;
-        --surface: #ffffff;
-        --text: #1c1917;
-        --muted: #57534e;
-        --border: #e7e5e4;
-        --code-bg: #f5f5f4;
-        --accent: #7c3aed;
-        --glowmark-search-bg: #fde047;
+        --bg: #ffffff;
+        --surface: #fafafa;
+        --text: #171717;
+        --muted: #737373;
+        --border: #ebebeb;
+        --button: #171717;
+        --button-text: #ffffff;
+        --focus: #2563eb;
+
+        /* Highlights in the playground */
+        --glowmark-mustache-bg: #ede9fe;
+        --glowmark-template-bg: #dbeafe;
+        --search-bg: #fde68a;
+        --todo-bg: #ffe4e6;
+
+        /* Code coloring, done by glowmark itself */
+        --code-keyword: #7c3aed;
+        --code-string: #15803d;
+        --code-fn: #2563eb;
+        --code-comment: #a3a3a3;
         color-scheme: light;
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --bg: #0c0a09;
-          --surface: #1c1917;
-          --text: #f5f5f4;
-          --muted: #a8a29e;
-          --border: #292524;
-          --code-bg: #141210;
-          --accent: #a78bfa;
-          --glowmark-bg: #713f12;
-          --glowmark-mustache-bg: #4c1d95;
-          --glowmark-template-bg: #1e3a8a;
-          --glowmark-search-bg: #facc15;
-          --glowmark-todo-bg: #7f1d1d;
-          --glowmark-tooltip-bg: #f5f5f4;
-          --glowmark-tooltip-fg: #0c0a09;
+          --bg: #0a0a0a;
+          --surface: #111111;
+          --text: #ededed;
+          --muted: #a1a1a1;
+          --border: #262626;
+          --button: #ededed;
+          --button-text: #0a0a0a;
+          --focus: #60a5fa;
+          --glowmark-mustache-bg: #3b2a6b;
+          --glowmark-template-bg: #1e3a5f;
+          --search-bg: #854d0e;
+          --todo-bg: #5f1d2a;
+          --glowmark-tooltip-bg: #ededed;
+          --glowmark-tooltip-fg: #0a0a0a;
+          --code-keyword: #c4b5fd;
+          --code-string: #86efac;
+          --code-fn: #93c5fd;
+          --code-comment: #737373;
           color-scheme: dark;
         }
       }
-      ::highlight(glowmark-search) { background-color: var(--glowmark-search-bg); color: #1c1917; }
-      ::highlight(glowmark-todo) { background-color: var(--glowmark-todo-bg, #ffe4e6); }
+
+      ::highlight(glowmark-search) { background-color: var(--search-bg); }
+      ::highlight(glowmark-todo) { background-color: var(--todo-bg); }
+      ::highlight(glowmark-keyword) { color: var(--code-keyword); }
+      ::highlight(glowmark-string) { color: var(--code-string); }
+      ::highlight(glowmark-fn) { color: var(--code-fn); }
+      ::highlight(glowmark-comment) { color: var(--code-comment); }
+
       * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
       body {
         margin: 0;
         background: var(--bg);
         color: var(--text);
-        font: 16px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif;
+        font: 15px/1.6 Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+        -webkit-font-smoothing: antialiased;
       }
-      main { max-width: 760px; margin: 0 auto; padding: 56px 16px 80px; }
-      h1 { font-size: clamp(2.2rem, 6vw, 3rem); margin: 0; letter-spacing: -0.03em; }
-      h2 { font-size: 1.15rem; margin: 48px 0 12px; }
-      .lede { font-size: 1.15rem; color: var(--muted); margin: 8px 0 24px; max-width: 34em; }
-      a { color: var(--accent); }
-      code, pre { font: 0.9em/1.5 ui-monospace, 'SF Mono', Menlo, monospace; }
-      pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin: 0; }
-      .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-      .install { display: flex; align-items: center; gap: 8px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 6px 6px 14px; }
-      .button {
-        border: 1px solid var(--border); background: var(--surface); color: var(--text);
-        border-radius: 6px; padding: 6px 12px; font: inherit; font-size: 0.9rem; cursor: pointer; text-decoration: none;
+      main { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+      a { color: inherit; }
+      code, pre { font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; font-variant-ligatures: none; }
+
+      /* Hero */
+      .hero { text-align: center; padding: 112px 0 72px; }
+      .meta { display: inline-flex; gap: 8px; font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; margin-bottom: 24px; }
+      h1 { font-size: 48px; line-height: 1.1; letter-spacing: -0.04em; font-weight: 700; margin: 0 0 12px; }
+      .tagline { font-size: 18px; margin: 0 0 6px; }
+      .subline { color: var(--muted); margin: 0 0 32px; }
+      .buttons { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 20px; border-radius: 8px;
+        font: 500 14px/1 Inter, system-ui, sans-serif; text-decoration: none; cursor: pointer;
+        border: 1px solid var(--border); background: var(--bg); color: var(--text);
+        transition: background-color 0.15s, border-color 0.15s;
       }
-      .button:hover { border-color: var(--muted); }
-      .button:focus-visible, input:focus-visible, [contenteditable]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-      .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
-      input[type='search'] {
-        width: 100%; font: inherit; padding: 10px 12px; border-radius: 8px;
-        border: 1px solid var(--border); background: var(--bg); color: var(--text); margin-bottom: 16px;
+      .btn:hover { background: var(--surface); }
+      .btn-primary { background: var(--button); color: var(--button-text); border-color: var(--button); }
+      .btn-primary:hover { background: var(--button); opacity: 0.88; }
+      .docs-link { display: inline-block; margin-top: 16px; font-size: 13px; color: var(--muted); }
+      :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+      /* Features */
+      .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 16px; list-style: none; padding: 0; margin: 0 0 72px; font-size: 14px; font-weight: 500; }
+      .features li { display: flex; align-items: center; gap: 8px; }
+      .features svg { flex: none; color: var(--muted); }
+
+      /* Sections */
+      section { margin-bottom: 64px; }
+      h2 { font-size: 16px; font-weight: 600; margin: 0 0 4px; }
+      section > p { color: var(--muted); margin: 0 0 16px; }
+      pre {
+        margin: 0; padding: 16px; overflow-x: auto; line-height: 1.7;
+        background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+        /* The default highlight background must not show behind code colors. */
+        --glowmark-bg: transparent;
       }
-      #content { outline: none; min-height: 120px; }
-      #content p { margin: 0 0 12px; }
-      .hint { color: var(--muted); font-size: 0.875rem; margin: 12px 0 0; }
-      .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 20px 0 6px; }
-      #html { white-space: pre-wrap; word-break: break-word; max-height: 220px; }
-      ul.features { padding-left: 1.2em; }
-      ul.features li { margin: 4px 0; }
-      footer { margin-top: 56px; color: var(--muted); font-size: 0.875rem; }
+      .copy-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 8px 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+      .icon-btn { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--muted); cursor: pointer; }
+      .icon-btn:hover { color: var(--text); }
+
+      /* Segmented buttons */
+      .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+      .tab {
+        height: 32px; padding: 0 12px; border-radius: 6px; cursor: pointer;
+        font: 500 13px/1 Inter, system-ui, sans-serif; color: var(--text);
+        background: var(--bg); border: 1px solid var(--border); transition: background-color 0.15s;
+      }
+      .tab:hover { background: var(--surface); }
+      .tab[aria-pressed='true'] { background: var(--surface); border-color: var(--muted); }
+
+      /* Playground */
+      .demo { border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+      .demo p { margin: 0 0 10px; }
+      .demo p:last-child { margin: 0; }
+      #content { outline: none; }
+      #search { width: 100%; height: 36px; padding: 0 12px; margin-bottom: 16px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; }
+      #search[hidden] { display: none; }
+      .hint { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+      #html { white-space: pre-wrap; word-break: break-word; }
+
+      footer { border-top: 1px solid var(--border); padding: 24px 16px; text-align: center; font-size: 13px; color: var(--muted); }
+      footer a { color: var(--text); }
+
+      @media (max-width: 560px) {
+        .hero { padding: 72px 0 56px; }
+        h1 { font-size: 40px; }
+        .features { grid-template-columns: repeat(2, 1fr); }
+      }
     </style>
   </head>
   <body>
     <main>
-      <h1>glowmark</h1>
-      <p class="lede">
-        Highlight search terms, <code>{{variables}}</code> or any pattern in your content, with tooltips.
-        Your HTML is never changed. Zero dependencies, any framework.
-      </p>
-      <div class="actions">
-        <div class="install">
+      <header class="hero">
+        <div class="meta"><span>v0.2.0</span><span>·</span><span>1.7 kB</span><span>·</span><span>0 dependencies</span></div>
+        <h1>glowmark</h1>
+        <p class="tagline" id="tagline">Highlight search terms and {{ variables }} in any content.</p>
+        <p class="subline">Your HTML is never changed. Works with any framework.</p>
+        <div class="buttons">
+          <a class="btn btn-primary" href="#try">Try it</a>
+          <a class="btn" href="https://github.com/shiv7700/glowmark">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            GitHub
+          </a>
+        </div>
+        <a class="docs-link" href="https://github.com/shiv7700/glowmark#readme">Documentation</a>
+      </header>
+
+      <ul class="features" aria-label="Features">
+        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>No DOM changes</li>
+        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>Any framework</li>
+        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>Search built in</li>
+        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>Hover tooltips</li>
+        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>Follows edits</li>
+        <li><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>TypeScript</li>
+      </ul>
+
+      <section>
+        <h2>Installation</h2>
+        <p>One package, no dependencies.</p>
+        <div class="copy-row">
           <code>npm install glowmark</code>
-          <button class="button" id="copy" type="button">Copy</button>
+          <button class="icon-btn" id="copy" type="button" aria-label="Copy install command">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5"/></svg>
+          </button>
         </div>
-        <a class="button" href="https://github.com/shiv7700/glowmark">GitHub</a>
-        <a class="button" href="https://www.npmjs.com/package/glowmark">npm</a>
-      </div>
+      </section>
 
-      <h2>Try it</h2>
-      <div class="card">
-        <input type="search" id="search" placeholder="Search the text below, e.g. order confirm" aria-label="Search the text below" />
-        <div id="content" contenteditable="true" spellcheck="false" aria-label="Editable example content">
-          <p>Hi {{ user.name }}, your order <b>#${orderId}</b> ships on {{ delivery.date }}.</p>
-          <p>Questions about your order? Reply to this email. TODO: confirm the {{ support.email }} address.</p>
-        </div>
-        <p class="hint">Hover a highlight to see its tooltip. The text is editable, so type a new <code>{{ variable }}</code> and watch it light up.</p>
-
-        <p class="label">The actual HTML: no &lt;span&gt;, no &lt;mark&gt;</p>
-        <pre id="html"></pre>
-      </div>
-
-      <h2>Use it</h2>
-      <pre><code>import { glowmark, mustache, words } from 'glowmark';
+      <section>
+        <h2>Usage</h2>
+        <p>Render your content as usual, then point glowmark at the element.</p>
+        <pre><code class="code">import { glowmark, mustache } from 'glowmark';
 import 'glowmark/style.css';
 
 const destroy = glowmark(element, [
   mustache({ tooltip: (m) =&gt; `Variable: ${m.groups[0]}` }),
-  words(['order', 'confirm']),
 ]);</code></pre>
+      </section>
 
-      <h2>Why glowmark</h2>
-      <ul class="features">
-        <li><strong>Your DOM is never touched.</strong> Matches are painted by the browser's CSS Custom Highlight API, so React, editors and your own code are never surprised.</li>
-        <li><strong>Any framework, or none.</strong> One function that attaches to an element.</li>
-        <li><strong>Follows your content.</strong> When the content re-renders or is edited, the highlights update on their own.</li>
-        <li><strong>Tiny.</strong> About 1.7 kB minified and gzipped, with zero dependencies.</li>
-      </ul>
+      <section id="try">
+        <h2>Try it</h2>
+        <p>Pick a rule. Hover a highlight for its tooltip. The text is editable.</p>
+        <div class="tabs" role="group" aria-label="Rule">
+          <button class="tab" type="button" data-mode="variables" aria-pressed="true">Variables</button>
+          <button class="tab" type="button" data-mode="templates" aria-pressed="false">Templates</button>
+          <button class="tab" type="button" data-mode="search" aria-pressed="false">Search</button>
+          <button class="tab" type="button" data-mode="custom" aria-pressed="false">Custom regex</button>
+        </div>
+        <div class="demo">
+          <input type="search" id="search" placeholder="Type to search, e.g. order ships" aria-label="Search the text below" hidden />
+          <div id="content" contenteditable="true" spellcheck="false" aria-label="Editable example text">
+            <p>Hi {{ user.name }}, your order <b>#${orderId}</b> ships on {{ delivery.date }}.</p>
+            <p>Questions about your order? Reply to this email. TODO: confirm {{ support.email }}. FIXME: add a tracking link.</p>
+          </div>
+        </div>
+        <pre><code class="code" id="snippet"></code></pre>
+      </section>
 
-      <footer>MIT licensed · <a href="https://github.com/shiv7700/glowmark#readme">Documentation</a></footer>
+      <section>
+        <h2>Your HTML stays the same</h2>
+        <p>This is the live HTML of the text above. No &lt;span&gt;, no &lt;mark&gt;, even while you edit.</p>
+        <pre><code id="html"></code></pre>
+      </section>
+
+      <section>
+        <h2>Frameworks</h2>
+        <p>One function, attached after your framework renders.</p>
+        <div class="tabs" role="group" aria-label="Framework">
+          <button class="tab" type="button" data-fw="react" aria-pressed="true">React</button>
+          <button class="tab" type="button" data-fw="vue" aria-pressed="false">Vue</button>
+          <button class="tab" type="button" data-fw="svelte" aria-pressed="false">Svelte</button>
+          <button class="tab" type="button" data-fw="vanilla" aria-pressed="false">Vanilla</button>
+        </div>
+        <pre><code class="code" id="framework"></code></pre>
+      </section>
     </main>
+
+    <footer>MIT licensed · Made by <a href="https://github.com/shiv7700">Shivang Ramola</a></footer>
 
     <script type="module">
       import { glowmark, mustache, template, words } from 'https://cdn.jsdelivr.net/npm/glowmark@0.2/+esm';
 
+      // Code on this page is colored by glowmark too.
+      const codeRules = [
+        { name: 'comment', pattern: /\/\/[^\n]*/g },
+        { name: 'string', pattern: /'[^'\n]*'|`[^`\n]*`|"[^"\n]*"/g },
+        { name: 'keyword', pattern: /\b(?:import|from|const|let|export|return|new|function)\b/g },
+        { name: 'fn', pattern: /\b[A-Za-z_]\w*(?=\()/g },
+      ];
+      document.querySelectorAll('code.code').forEach((el) => glowmark(el, codeRules));
+
+      glowmark(document.getElementById('tagline'), [mustache({ tooltip: () => 'Painted by glowmark. Your HTML is untouched.' })]);
+
+      // Playground
       const content = document.getElementById('content');
-      const values = { 'user.name': 'Ada Lovelace', 'delivery.date': 'Friday, 23 October', orderId: 'A-1042' };
-      const valueOf = (name) => (name in values ? `Value: ${values[name]}` : `"${name}" has no value yet`);
+      const search = document.getElementById('search');
+      const snippet = document.getElementById('snippet');
+      const values = { 'user.name': 'Ada Lovelace', 'delivery.date': 'Friday, 23 October', 'support.email': 'help@example.com', orderId: 'A-1042' };
+      const valueOf = (m) => values[m.groups[0]] ?? `"${m.groups[0]}" has no value`;
 
-      glowmark(content, [
-        mustache({ tooltip: (m) => valueOf(m.groups[0]) }),
-        template({ tooltip: (m) => valueOf(m.groups[0]) }),
-        { name: 'todo', pattern: /\bTODO\b/g, tooltip: () => 'Unfinished item' },
-      ]);
+      const modes = {
+        variables: {
+          rules: () => [mustache({ tooltip: valueOf })],
+          code: "glowmark(element, [\n  mustache({ tooltip: (m) => values[m.groups[0]] }),\n]);",
+        },
+        templates: {
+          rules: () => [template({ tooltip: valueOf })],
+          code: "glowmark(element, [\n  template({ tooltip: (m) => values[m.groups[0]] }),\n]);",
+        },
+        search: {
+          rules: () => [words(search.value.split(/\s+/))],
+          code: "// Recreate on every keystroke\ndestroy();\ndestroy = glowmark(element, [words(query.split(' '))]);",
+        },
+        custom: {
+          rules: () => [{ name: 'todo', pattern: /\b(?:TODO|FIXME)\b/g, tooltip: (m) => `${m.text}: unfinished` }],
+          code: "glowmark(element, [\n  { name: 'todo', pattern: /\\b(?:TODO|FIXME)\\b/g, tooltip: (m) => `${m.text}: unfinished` },\n]);",
+        },
+      };
 
-      let stopSearch = () => {};
-      document.getElementById('search').addEventListener('input', (e) => {
-        stopSearch();
-        stopSearch = glowmark(content, [words(e.target.value.split(/\s+/))]);
-      });
+      let mode = 'variables';
+      let destroy = () => {};
+      const apply = () => {
+        destroy();
+        destroy = glowmark(content, modes[mode].rules());
+        snippet.textContent = modes[mode].code;
+        search.hidden = mode !== 'search';
+      };
 
-      // Show the live HTML to prove nothing is wrapped.
+      const selectTab = (group, button) =>
+        group.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+
+      document.querySelectorAll('[data-mode]').forEach((button) =>
+        button.addEventListener('click', () => {
+          mode = button.dataset.mode;
+          selectTab(button.parentElement, button);
+          apply();
+          if (mode === 'search') search.focus();
+        }),
+      );
+      search.addEventListener('input', apply);
+      apply();
+
+      // Live HTML
       const html = document.getElementById('html');
       const showHtml = () => (html.textContent = content.innerHTML.trim().replace(/\n\s+/g, '\n'));
       new MutationObserver(showHtml).observe(content, { childList: true, subtree: true, characterData: true });
       showHtml();
 
-      document.getElementById('copy').addEventListener('click', async (e) => {
+      // Framework snippets
+      const frameworks = {
+        react: "function Preview({ html }) {\n  const ref = useRef(null);\n  useEffect(() => glowmark(ref.current, rules), []);\n  return <div ref={ref} dangerouslySetInnerHTML={{ __html: html }} />;\n}",
+        vue: "const el = ref();\nlet destroy;\nonMounted(() => (destroy = glowmark(el.value, rules)));\nonUnmounted(() => destroy());",
+        svelte: "let el;\n$effect(() => glowmark(el, rules));",
+        vanilla: "const destroy = glowmark(document.querySelector('#preview'), rules);",
+      };
+      const framework = document.getElementById('framework');
+      document.querySelectorAll('[data-fw]').forEach((button) =>
+        button.addEventListener('click', () => {
+          selectTab(button.parentElement, button);
+          framework.textContent = frameworks[button.dataset.fw];
+        }),
+      );
+      framework.textContent = frameworks.react;
+
+      // Copy
+      const copy = document.getElementById('copy');
+      copy.addEventListener('click', async () => {
         try {
           await navigator.clipboard.writeText('npm install glowmark');
-          e.target.textContent = 'Copied';
+          copy.setAttribute('aria-label', 'Copied');
+          copy.style.color = 'var(--text)';
+          setTimeout(() => { copy.setAttribute('aria-label', 'Copy install command'); copy.style.color = ''; }, 1500);
         } catch {
-          e.target.textContent = 'Copy failed';
+          copy.setAttribute('aria-label', 'Copy failed');
         }
-        setTimeout(() => (e.target.textContent = 'Copy'), 1500);
       });
     </script>
   </body>
