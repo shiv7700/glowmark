@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>glowmark demo</title>
+    <link rel="stylesheet" href="../style.css" />
+    <style>
+      body { font: 16px/1.6 system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
+      ::highlight(glowmark-todo) { background-color: #ffe4e6; }
+    </style>
+  </head>
+  <body>
+    <h1>glowmark demo</h1>
+    <p>Run <code>npm run build</code>, serve the repo root, then open <code>/examples/</code>. Hover a highlight.</p>
+
+    <div id="content">
+      <p>Hello {{ user.name }}, your order <b>#${orderId}</b> ships on {{ date }}.</p>
+      <p title="{{ not highlighted }}">Attributes are left alone. TODO: confirm address.</p>
+    </div>
+
+    <script type="module">
+      import { glowmark, mustache, template } from '../dist/index.js';
+
+      glowmark(document.getElementById('content'), [
+        mustache({ tooltip: (m) => `Variable: ${m.groups[0]}` }),
+        template({ tooltip: (m) => `Template value: ${m.groups[0]}` }),
+        { name: 'todo', pattern: /\bTODO\b/g, tooltip: () => 'Pending item' },
+      ]);
+    </script>
+  </body>
+</html>

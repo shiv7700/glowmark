@@ -1,0 +1,27 @@
+/*
+ * Optional default styles for glowmark. Override the custom properties to theme.
+ * Inside ::highlight() browsers only allow color, background-color, text-decoration and text-shadow.
+ */
+
+::highlight(glowmark) {
+  background-color: var(--glowmark-bg, #fff3a3);
+}
+
+::highlight(glowmark-mustache) {
+  background-color: var(--glowmark-mustache-bg, #ede4ff);
+}
+
+::highlight(glowmark-template) {
+  background-color: var(--glowmark-template-bg, #dcefff);
+}
+
+.glowmark-tooltip {
+  z-index: var(--glowmark-tooltip-z, 9999);
+  max-width: 280px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font: 12px/1.4 system-ui, sans-serif;
+  background: var(--glowmark-tooltip-bg, #111827);
+  color: var(--glowmark-tooltip-fg, #fff);
+  pointer-events: none;
+}

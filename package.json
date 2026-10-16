@@ -1,0 +1,49 @@
+{
+  "name": "glowmark",
+  "version": "0.1.0",
+  "description": "Highlight {{variables}}, ${templates} or any pattern in rendered content, with tooltips, without changing your HTML. Zero dependencies, works with any framework.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./style.css": "./style.css"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "style.css"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "keywords": [
+    "highlight",
+    "tooltip",
+    "html",
+    "mustache",
+    "template",
+    "variables",
+    "framework-agnostic"
+  ],
+  "license": "MIT",
+  "author": "Shivang Ramola",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shiv7700/glowmark.git"
+  },
+  "homepage": "https://github.com/shiv7700/glowmark#readme",
+  "bugs": "https://github.com/shiv7700/glowmark/issues",
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.12"
+  }
+}
